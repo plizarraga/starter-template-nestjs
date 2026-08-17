@@ -1,7 +1,7 @@
 {
   "name": "starter-template-nestjs",
   "version": "0.0.1",
-  "description": "",
+  "description": "Starter template for NestJS",
   "author": "",
   "private": true,
   "license": "UNLICENSED",
