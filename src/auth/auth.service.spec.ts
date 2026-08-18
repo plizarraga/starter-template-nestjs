@@ -80,4 +80,26 @@ describe('AuthService', () => {
       tokenType: 'Bearer',
     });
   });
+
+  it('When a password is incorrect, then login returns the same invalid-credentials error', async () => {
+    const service = new AuthService(
+      {
+        findByEmailWithPassword: vi.fn().mockResolvedValue({
+          id: 'user-1',
+          passwordHash: 'password-hash',
+        }),
+      } as never,
+      { verify: vi.fn().mockResolvedValue(false) } as never,
+      {} as never,
+      {} as never,
+      { info: vi.fn(), warn: vi.fn() } as never,
+    );
+
+    await expect(
+      service.login({
+        email: 'reader@example.com',
+        password: 'wrong-password',
+      }),
+    ).rejects.toMatchObject({ code: 'INVALID_CREDENTIALS' });
+  });
 });

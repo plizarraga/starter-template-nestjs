@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { PlatformError } from '../platform/errors/platform-error';
-import { PublicUser, UsersRepository } from '../users/users.repository';
+import { PublicUser } from '../users/users.repository';
+import { UsersService } from '../users/users.service';
 import { AccessTokenService } from './access-token.service';
 import { AuthSessionRepository } from './auth-session.repository';
 import { CredentialsDto } from './dto/credentials.dto';
@@ -11,7 +12,7 @@ import { PasswordService } from './password.service';
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly users: UsersRepository,
+    private readonly users: UsersService,
     private readonly passwords: PasswordService,
     private readonly accessTokens: AccessTokenService,
     private readonly sessions: AuthSessionRepository,

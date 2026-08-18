@@ -1,18 +1,19 @@
 import { Controller, Get, Req, UseGuards } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { Prisma, Role, User } from '@prisma/client';
+import { PrismaClient, Role } from '@prisma/client';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { AppModule } from '../../src/app.module';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   AccessTokenGuard,
   AuthenticatedRequest,
 } from '../../src/auth/access-token.guard';
-import { AuthModule } from '../../src/auth/auth.module';
 import { configureApplication } from '../../src/platform/http/configure-application';
-import { PrismaService } from '../../src/platform/prisma/prisma.service';
-import { REDIS_CLIENT } from '../../src/platform/redis/redis.client';
+import { defaultEnvironment } from '../support/default-environment';
+import {
+  createTestEnvironment,
+  TestEnvironment,
+} from '../support/test-environment';
 
 @Controller('auth-probe')
 class AuthProbeController {
@@ -25,61 +26,60 @@ class AuthProbeController {
 
 describe('authentication (e2e)', () => {
   let app: NestExpressApplication;
+  let environment: TestEnvironment;
+  let originalEnvironment: NodeJS.ProcessEnv;
 
-  afterEach(async () => {
-    await app?.close();
-  });
+  beforeAll(async () => {
+    originalEnvironment = { ...process.env };
+    environment = await createTestEnvironment();
+    const databaseUrl = new URL(environment.databaseUrl);
+    databaseUrl.searchParams.set('schema', environment.schema);
+    const prisma = new PrismaClient({
+      datasources: { db: { url: databaseUrl.toString() } },
+    });
+    await prisma.$executeRawUnsafe(
+      `CREATE TYPE "${environment.schema}"."Role" AS ENUM ('USER', 'ADMIN')`,
+    );
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE "${environment.schema}"."User" (
+        "id" UUID NOT NULL,
+        "email" TEXT NOT NULL,
+        "passwordHash" TEXT NOT NULL,
+        "role" "${environment.schema}"."Role" NOT NULL DEFAULT 'USER',
+        "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "updatedAt" TIMESTAMPTZ NOT NULL,
+        CONSTRAINT "User_pkey" PRIMARY KEY ("id"),
+        CONSTRAINT "User_email_key" UNIQUE ("email")
+      )
+    `);
+    await prisma.$disconnect();
 
-  it('When a user registers and logs in, then the access token authenticates a protected request', async () => {
-    const users = new Map<string, User>();
-    const redisTransaction = {
-      exec: vi.fn().mockResolvedValue([]),
-      expire: vi.fn().mockReturnThis(),
-      hset: vi.fn().mockReturnThis(),
-      sadd: vi.fn().mockReturnThis(),
+    process.env = {
+      ...originalEnvironment,
+      ...defaultEnvironment,
+      DATABASE_URL: databaseUrl.toString(),
+      REDIS_URL: environment.redisUrl,
     };
+    const { AppModule } =
+      (await import('../../src/app.module')) as typeof import('../../src/app.module');
+    const { AuthModule } =
+      (await import('../../src/auth/auth.module')) as typeof import('../../src/auth/auth.module');
     const moduleFixture: TestingModule = await Test.createTestingModule({
       controllers: [AuthProbeController],
       imports: [AppModule, AuthModule],
-    })
-      .overrideProvider(PrismaService)
-      .useValue({
-        user: {
-          create: vi.fn(
-            ({
-              data,
-            }: {
-              data: Omit<User, 'id' | 'createdAt' | 'updatedAt'>;
-            }) => {
-              if (users.has(data.email)) {
-                throw new Prisma.PrismaClientKnownRequestError('Duplicate', {
-                  clientVersion: 'test',
-                  code: 'P2002',
-                });
-              }
-              const user = {
-                ...data,
-                createdAt: new Date('2026-08-17T00:00:00.000Z'),
-                id: 'user-1',
-                updatedAt: new Date('2026-08-17T00:00:00.000Z'),
-              };
-              users.set(user.email, user);
-              return user;
-            },
-          ),
-          findUnique: vi.fn(
-            ({ where: { email } }: { where: { email: string } }) =>
-              Promise.resolve(users.get(email) ?? null),
-          ),
-        },
-      })
-      .overrideProvider(REDIS_CLIENT)
-      .useValue({ disconnect: vi.fn(), multi: vi.fn(() => redisTransaction) })
-      .compile();
+    }).compile();
     app = moduleFixture.createNestApplication();
     configureApplication(app);
     await app.init();
+  }, 120_000);
 
+  afterAll(async () => {
+    await app?.close();
+    await environment?.stop();
+    process.env = originalEnvironment;
+  }, 120_000);
+
+  it('When a user registers and logs in, then the access token authenticates a protected request', async () => {
     const registration = await request(app.getHttpServer())
       .post('/auth/register')
       .send({ email: ' Reader@Example.com ', password: 'password-123' })
@@ -87,7 +87,6 @@ describe('authentication (e2e)', () => {
 
     expect(registration.body).toMatchObject({
       email: 'reader@example.com',
-      id: 'user-1',
       role: Role.USER,
     });
     expect(registration.body).not.toHaveProperty('passwordHash');
@@ -107,27 +106,16 @@ describe('authentication (e2e)', () => {
     const loginBody = login.body as { accessToken: string };
 
     expect(login.body).toMatchObject({ expiresIn: 600, tokenType: 'Bearer' });
-    expect(redisTransaction.exec).toHaveBeenCalledOnce();
 
     const protectedResponse = await request(app.getHttpServer())
       .get('/auth-probe')
       .set('Authorization', `Bearer ${loginBody.accessToken}`)
       .expect(200);
 
-    expect(protectedResponse.body).toEqual({ id: 'user-1', role: Role.USER });
+    expect(protectedResponse.body).toMatchObject({ role: Role.USER });
   });
 
   it('When credentials are invalid, then login returns the stable invalid-credentials error', async () => {
-    const moduleFixture = await Test.createTestingModule({
-      imports: [AppModule],
-    })
-      .overrideProvider(PrismaService)
-      .useValue({ user: { findUnique: vi.fn().mockResolvedValue(null) } })
-      .compile();
-    app = moduleFixture.createNestApplication();
-    configureApplication(app);
-    await app.init();
-
     await request(app.getHttpServer())
       .post('/auth/login')
       .send({ email: 'unknown@example.com', password: 'password-123' })
