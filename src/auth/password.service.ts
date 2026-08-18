@@ -55,6 +55,10 @@ export class PasswordService {
     return timingSafeEqual(hash.derivedKey, derivedKey);
   }
 
+  async consumeVerificationCost(password: string): Promise<void> {
+    await this.scrypt(password, randomBytes(saltLength), this.parameters());
+  }
+
   private parameters() {
     return {
       N: this.config.getOrThrow<number>('SCRYPT_N'),

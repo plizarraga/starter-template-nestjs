@@ -34,12 +34,14 @@ export class AuthService {
     const user = await this.users.findByEmailWithPassword(
       this.normalizeEmail(credentials.email),
     );
+    if (user === null) {
+      await this.passwords.consumeVerificationCost(credentials.password);
+      return this.rejectInvalidCredentials();
+    }
     if (
-      user === null ||
       !(await this.passwords.verify(credentials.password, user.passwordHash))
     ) {
-      this.logger.warn({ event: 'auth.login.failure' });
-      throw new PlatformError('INVALID_CREDENTIALS');
+      return this.rejectInvalidCredentials();
     }
 
     const sessionId = await this.sessions.create(user.id);
@@ -62,5 +64,10 @@ export class AuthService {
 
   private normalizeEmail(email: string): string {
     return email.trim().toLowerCase();
+  }
+
+  private rejectInvalidCredentials(): never {
+    this.logger.warn({ event: 'auth.login.failure' });
+    throw new PlatformError('INVALID_CREDENTIALS');
   }
 }

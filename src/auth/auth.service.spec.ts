@@ -102,4 +102,24 @@ describe('AuthService', () => {
       }),
     ).rejects.toMatchObject({ code: 'INVALID_CREDENTIALS' });
   });
+
+  it('When a user does not exist, then login consumes password-verification cost before failing', async () => {
+    const password = {
+      consumeVerificationCost: vi.fn().mockResolvedValue(undefined),
+    };
+    const service = new AuthService(
+      { findByEmailWithPassword: vi.fn().mockResolvedValue(null) } as never,
+      password as never,
+      {} as never,
+      {} as never,
+      { info: vi.fn(), warn: vi.fn() } as never,
+    );
+
+    await expect(
+      service.login({ email: 'unknown@example.com', password: 'password-123' }),
+    ).rejects.toMatchObject({ code: 'INVALID_CREDENTIALS' });
+    expect(password.consumeVerificationCost).toHaveBeenCalledWith(
+      'password-123',
+    );
+  });
 });
