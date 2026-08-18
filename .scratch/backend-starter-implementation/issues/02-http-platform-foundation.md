@@ -4,8 +4,8 @@
 
 **Blocked by:** 01 — Prepare toolchain and local environment.
 
-**Status:** ready-for-agent
+**Status:** completed
 
-- [ ] Invalid required application configuration prevents startup, while unrelated container environment variables remain allowed.
-- [ ] Validation rejects unknown input and every API error uses the standard response contract with a request ID.
-- [ ] Request IDs, structured JSON logs, centralized sensitive-data redaction, Helmet, CORS, and non-production Swagger behavior are active and testable.
+- [x] Invalid required application configuration prevents startup, while unrelated container environment variables remain allowed.
+- [x] Validation rejects unknown input and every API error uses the standard response contract with a request ID.
+- [x] Request IDs, structured JSON logs, centralized sensitive-data redaction, Helmet, CORS, and non-production Swagger behavior are active and testable.

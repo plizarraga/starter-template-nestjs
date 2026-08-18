@@ -11,6 +11,7 @@ export = vitest.defineConfig({
           name: 'unit',
           environment: 'node',
           include: ['src/**/*.spec.ts'],
+          setupFiles: ['test/support/default-environment.ts'],
         },
       },
       {
@@ -18,6 +19,7 @@ export = vitest.defineConfig({
           name: 'integration',
           environment: 'node',
           include: ['test/integration/**/*.spec.ts'],
+          setupFiles: ['test/support/default-environment.ts'],
         },
       },
       {
@@ -25,6 +27,7 @@ export = vitest.defineConfig({
           name: 'e2e',
           environment: 'node',
           include: ['test/e2e/**/*.spec.ts'],
+          setupFiles: ['test/support/default-environment.ts'],
         },
       },
     ],
