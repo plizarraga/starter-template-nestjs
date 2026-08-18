@@ -88,6 +88,10 @@ Fix once, then it stays fixed:
 Issues live as local Markdown files under `.scratch/`. See
 `docs/agents/issue-tracker.md`.
 
+Tickets are the source of truth for implementation progress. After implementing
+one, mark its status `completed` and check every satisfied acceptance criterion.
+The next ticket is the unblocked frontier.
+
 ### Triage labels
 
 Use the canonical triage label vocabulary. See
