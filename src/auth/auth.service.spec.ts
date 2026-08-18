@@ -1,5 +1,6 @@
 import { Role } from '@prisma/client';
 import { describe, expect, it, vi } from 'vitest';
+import { PlatformError } from '../platform/errors/platform-error';
 import { AuthService } from './auth.service';
 
 describe('AuthService', () => {
@@ -149,6 +150,141 @@ describe('AuthService', () => {
     await service.logoutAll('user-1');
 
     expect(sessions.revokeAll).toHaveBeenCalledWith('user-1');
+  });
+
+  it('When updating a profile with the current password, then it normalizes the email and revokes sessions after saving', async () => {
+    const users = {
+      findByIdWithPassword: vi.fn().mockResolvedValue({
+        id: 'user-1',
+        passwordHash: 'password-hash',
+      }),
+      transact: vi.fn(
+        (
+          work: (users: {
+            updateEmail: () => Promise<unknown>;
+          }) => Promise<unknown>,
+        ) =>
+          work({
+            updateEmail: vi
+              .fn()
+              .mockResolvedValue({ email: 'reader@example.com', id: 'user-1' }),
+          }),
+      ),
+    };
+    const passwords = { verify: vi.fn().mockResolvedValue(true) };
+    const sessions = { revokeAll: vi.fn().mockResolvedValue(undefined) };
+    const service = new AuthService(
+      users as never,
+      passwords as never,
+      {} as never,
+      sessions as never,
+      { info: vi.fn(), warn: vi.fn() } as never,
+    );
+
+    const result = await service.updateProfile('user-1', {
+      currentPassword: 'password-123',
+      email: ' Reader@Example.com ',
+    });
+
+    expect(users.transact).toHaveBeenCalledWith(expect.any(Function));
+    expect(sessions.revokeAll).toHaveBeenCalledWith('user-1');
+    expect(result).toMatchObject({ email: 'reader@example.com' });
+  });
+
+  it('When a profile update cannot be saved, then it preserves active sessions', async () => {
+    const users = {
+      findByIdWithPassword: vi.fn().mockResolvedValue({
+        id: 'user-1',
+        passwordHash: 'password-hash',
+      }),
+      transact: vi
+        .fn()
+        .mockRejectedValue(new PlatformError('USER_EMAIL_ALREADY_EXISTS')),
+    };
+    const sessions = { revokeAll: vi.fn() };
+    const service = new AuthService(
+      users as never,
+      { verify: vi.fn().mockResolvedValue(true) } as never,
+      {} as never,
+      sessions as never,
+      { info: vi.fn(), warn: vi.fn() } as never,
+    );
+
+    await expect(
+      service.updateProfile('user-1', {
+        currentPassword: 'password-123',
+        email: 'existing@example.com',
+      }),
+    ).rejects.toMatchObject({ code: 'USER_EMAIL_ALREADY_EXISTS' });
+
+    expect(sessions.revokeAll).not.toHaveBeenCalled();
+  });
+
+  it('When changing a password with the current password, then it saves a new hash and revokes sessions', async () => {
+    const users = {
+      findByIdWithPassword: vi.fn().mockResolvedValue({
+        id: 'user-1',
+        passwordHash: 'password-hash',
+      }),
+      transact: vi.fn(
+        (
+          work: (users: {
+            updatePassword: () => Promise<void>;
+          }) => Promise<void>,
+        ) => work({ updatePassword: vi.fn().mockResolvedValue(undefined) }),
+      ),
+    };
+    const passwords = {
+      hash: vi.fn().mockResolvedValue('new-password-hash'),
+      verify: vi.fn().mockResolvedValue(true),
+    };
+    const sessions = { revokeAll: vi.fn().mockResolvedValue(undefined) };
+    const service = new AuthService(
+      users as never,
+      passwords as never,
+      {} as never,
+      sessions as never,
+      { info: vi.fn(), warn: vi.fn() } as never,
+    );
+
+    await service.changePassword('user-1', {
+      currentPassword: 'password-123',
+      newPassword: 'password-456',
+    });
+
+    expect(passwords.hash).toHaveBeenCalledWith('password-456');
+    expect(sessions.revokeAll).toHaveBeenCalledWith('user-1');
+    expect(users.transact).toHaveBeenCalledWith(expect.any(Function));
+  });
+
+  it('When a password update cannot be saved, then it preserves active sessions', async () => {
+    const users = {
+      findByIdWithPassword: vi.fn().mockResolvedValue({
+        id: 'user-1',
+        passwordHash: 'password-hash',
+      }),
+      transact: vi.fn().mockRejectedValue(new Error('database failed')),
+    };
+    const sessions = { revokeAll: vi.fn() };
+    const service = new AuthService(
+      users as never,
+      {
+        hash: vi.fn().mockResolvedValue('new-password-hash'),
+        verify: vi.fn().mockResolvedValue(true),
+      } as never,
+      {} as never,
+      sessions as never,
+      { info: vi.fn(), warn: vi.fn() } as never,
+    );
+
+    await expect(
+      service.changePassword('user-1', {
+        currentPassword: 'password-123',
+        newPassword: 'password-456',
+      }),
+    ).rejects.toThrow('database failed');
+
+    expect(sessions.revokeAll).not.toHaveBeenCalled();
   });
 
   it('When a password is incorrect, then login returns the same invalid-credentials error', async () => {

@@ -5,8 +5,10 @@ import { PlatformError } from '../platform/errors/platform-error';
 import { PublicUser, UsersService } from '../users/users.service';
 import { AccessTokenService } from './access-token.service';
 import { AuthSessionRepository } from './auth-session.repository';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { CredentialsDto } from './dto/credentials.dto';
 import { PasswordService } from './password.service';
+import { UpdateProfileDto } from '../users/dto/update-profile.dto';
 
 @Injectable()
 export class AuthService {
@@ -93,8 +95,49 @@ export class AuthService {
     this.logger.info({ event: 'auth.logout_all', userId });
   }
 
+  async updateProfile(
+    userId: string,
+    profile: UpdateProfileDto,
+  ): Promise<PublicUser> {
+    const user = await this.currentUser(userId, profile.currentPassword);
+    const updated = await this.users.transact(async (users) => {
+      const updated = await users.updateEmail(
+        user.id,
+        this.normalizeEmail(profile.email),
+      );
+      await this.sessions.revokeAll(user.id);
+      return updated;
+    });
+    this.logger.info({ event: 'auth.profile_updated', userId: user.id });
+    return updated;
+  }
+
+  async changePassword(
+    userId: string,
+    passwords: ChangePasswordDto,
+  ): Promise<void> {
+    const user = await this.currentUser(userId, passwords.currentPassword);
+    const passwordHash = await this.passwords.hash(passwords.newPassword);
+    await this.users.transact(async (users) => {
+      await users.updatePassword(user.id, passwordHash);
+      await this.sessions.revokeAll(user.id);
+    });
+    this.logger.info({ event: 'auth.password_changed', userId: user.id });
+  }
+
   private normalizeEmail(email: string): string {
     return email.trim().toLowerCase();
+  }
+
+  private async currentUser(userId: string, password: string) {
+    const user = await this.users.findByIdWithPassword(userId);
+    if (user === null) {
+      throw new PlatformError('USER_NOT_FOUND');
+    }
+    if (!(await this.passwords.verify(password, user.passwordHash))) {
+      throw new PlatformError('INVALID_CREDENTIALS');
+    }
+    return user;
   }
 
   private rejectInvalidCredentials(): never {

@@ -3,6 +3,7 @@ import {
   Controller,
   HttpCode,
   HttpStatus,
+  Patch,
   Post,
   Req,
   Res,
@@ -16,6 +17,7 @@ import { OriginValidator } from '../platform/http/origin-validator.service';
 import { AccessTokenGuard } from './access-token.guard';
 import type { AuthenticatedRequest } from './access-token.guard';
 import { AuthService } from './auth.service';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { CredentialsDto } from './dto/credentials.dto';
 
 @Controller('auth')
@@ -81,6 +83,19 @@ export class AuthController {
       throw new PlatformError('UNAUTHORIZED');
     }
     await this.auth.logoutAll(request.principal.id);
+  }
+
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Patch('password')
+  @UseGuards(AccessTokenGuard)
+  async changePassword(
+    @Req() request: AuthenticatedRequest,
+    @Body() passwords: ChangePasswordDto,
+  ): Promise<void> {
+    if (request.principal === undefined) {
+      throw new PlatformError('UNAUTHORIZED');
+    }
+    await this.auth.changePassword(request.principal.id, passwords);
   }
 
   private setRefreshCookie(response: Response, refreshToken: string): void {

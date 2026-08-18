@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { Environment } from '../platform/config/environment';
@@ -12,9 +12,9 @@ import { PasswordService } from './password.service';
 
 @Module({
   controllers: [AuthController],
-  exports: [AccessTokenGuard, AccessTokenService],
+  exports: [AccessTokenGuard, AccessTokenService, AuthService],
   imports: [
-    UsersModule,
+    forwardRef(() => UsersModule),
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService<Environment, true>) => ({

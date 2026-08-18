@@ -4,8 +4,8 @@
 
 **Blocked by:** 05 — Implement refresh and session revocation.
 
-**Status:** ready-for-agent
+**Status:** completed
 
-- [ ] Current-user retrieval returns only the public user representation.
-- [ ] Profile updates accept only the permitted fields, verify the current password, normalize email, and reject duplicate addresses through the standard contract.
-- [ ] Password changes verify the current password, enforce the password policy, update the protected hash, and revoke all refresh sessions.
+- [x] Current-user retrieval returns only the public user representation.
+- [x] Profile updates accept only the permitted fields, verify the current password, normalize email, and reject duplicate addresses through the standard contract.
+- [x] Password changes verify the current password, enforce the password policy, update the protected hash, and revoke all refresh sessions.

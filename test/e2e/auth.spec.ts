@@ -258,4 +258,131 @@ describe('authentication (e2e)', () => {
         .expect(401);
     }
   });
+
+  it('When an authenticated user retrieves and updates their profile, then only the public normalized profile is returned', async () => {
+    await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({ email: 'profile@example.com', password: 'password-123' })
+      .expect(201);
+    const login = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: 'profile@example.com', password: 'password-123' })
+      .expect(200);
+    const accessToken = (login.body as { accessToken: string }).accessToken;
+    const refreshCookie = login.headers['set-cookie']?.[0] ?? '';
+
+    await request(app.getHttpServer())
+      .get('/users/me')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({
+          email: 'profile@example.com',
+          role: Role.USER,
+        });
+        expect(body).not.toHaveProperty('passwordHash');
+      });
+
+    await request(app.getHttpServer())
+      .patch('/users/me')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        currentPassword: 'password-123',
+        email: ' Profile-Updated@Example.com ',
+      })
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({ email: 'profile-updated@example.com' });
+        expect(body).not.toHaveProperty('passwordHash');
+      });
+
+    await request(app.getHttpServer())
+      .post('/auth/refresh')
+      .set('Cookie', refreshCookie)
+      .set('Origin', 'http://localhost:3001')
+      .expect(401);
+  });
+
+  it('When an authenticated user changes their password, then existing refresh sessions are revoked', async () => {
+    await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({ email: 'password@example.com', password: 'password-123' })
+      .expect(201);
+    const login = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: 'password@example.com', password: 'password-123' })
+      .expect(200);
+    const accessToken = (login.body as { accessToken: string }).accessToken;
+    const refreshCookie = login.headers['set-cookie']?.[0] ?? '';
+
+    await request(app.getHttpServer())
+      .patch('/auth/password')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        currentPassword: 'password-123',
+        newPassword: 'password-456',
+      })
+      .expect(204);
+
+    await request(app.getHttpServer())
+      .post('/auth/refresh')
+      .set('Cookie', refreshCookie)
+      .set('Origin', 'http://localhost:3001')
+      .expect(401);
+
+    await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: 'password@example.com', password: 'password-456' })
+      .expect(200);
+  });
+
+  it('When a profile update has an invalid password or duplicate email, then it returns the standard error', async () => {
+    await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({ email: 'existing@example.com', password: 'password-123' })
+      .expect(201);
+    await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({ email: 'updater@example.com', password: 'password-123' })
+      .expect(201);
+    const login = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: 'updater@example.com', password: 'password-123' })
+      .expect(200);
+    const accessToken = (login.body as { accessToken: string }).accessToken;
+
+    await request(app.getHttpServer())
+      .patch('/users/me')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ currentPassword: 'wrong-password', email: 'updated@example.com' })
+      .expect(401)
+      .expect(({ body }) => {
+        const error = body as Record<string, unknown>;
+        expect(error).toMatchObject({
+          code: 'INVALID_CREDENTIALS',
+          message: 'Credentials are invalid',
+          path: '/users/me',
+          statusCode: 401,
+        });
+        expect(error.requestId).toEqual(expect.any(String));
+        expect(error.timestamp).toEqual(expect.any(String));
+      });
+
+    await request(app.getHttpServer())
+      .patch('/users/me')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ currentPassword: 'password-123', email: 'existing@example.com' })
+      .expect(409)
+      .expect(({ body }) => {
+        const error = body as Record<string, unknown>;
+        expect(error).toMatchObject({
+          code: 'USER_EMAIL_ALREADY_EXISTS',
+          message: 'A user with this email already exists',
+          path: '/users/me',
+          statusCode: 409,
+        });
+        expect(error.requestId).toEqual(expect.any(String));
+        expect(error.timestamp).toEqual(expect.any(String));
+      });
+  });
 });
