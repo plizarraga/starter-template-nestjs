@@ -26,7 +26,13 @@ export type Environment = {
 };
 
 const environmentSchema = Joi.object<Environment>({
-  ACCESS_TOKEN_TTL_SECONDS: Joi.number().integer().positive().default(600),
+  // 10 minutes (10 * 60 = 600s) — see docs/EDD.md §S4-S5: this is the max
+  // stale-authorization window, since access tokens verify locally with no
+  // per-request Redis/Postgres lookup.
+  ACCESS_TOKEN_TTL_SECONDS: Joi.number()
+    .integer()
+    .positive()
+    .default(10 * 60),
   ARGON2_MEMORY_COST: Joi.number().integer().positive().default(65536),
   ARGON2_PARALLELISM: Joi.number().integer().positive().default(4),
   ARGON2_TIME_COST: Joi.number().integer().positive().default(3),
