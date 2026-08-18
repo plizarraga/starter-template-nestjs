@@ -45,25 +45,24 @@ It is a starter, not a complete product. Application-specific business domains a
 
 ## Getting Started
 
-### 1. Clone the repository
+### Create a new project from the template
+
+This repository is a GitHub template. Create a clean project from it (fresh `main` branch, no history) with the GitHub CLI:
 
 ```bash
-git clone <repository-url>
+gh repo create <project-name> --private --template plizarraga/starter-template-nestjs --clone
+cd <project-name>
 ```
 
-### 2. Enter the project directory
+Alternatively, click **Use this template** on the repository's GitHub page and clone the new repository.
 
-```bash
-cd starter-template-nestjs
-```
-
-### 3. Install dependencies
+### Install dependencies
 
 ```bash
 pnpm install
 ```
 
-### 4. Create local configuration
+### Create local configuration
 
 ```bash
 cp .env.example .env
@@ -71,7 +70,7 @@ cp .env.example .env
 
 Use the local-development values in `.env.example`, then replace signing and HMAC secrets with high-entropy values outside local development. `.env` is ignored by Git and is not loaded when `NODE_ENV=production`.
 
-### 5. Start local infrastructure
+### Start local infrastructure
 
 ```bash
 docker compose up -d
@@ -79,13 +78,13 @@ docker compose up -d
 
 This starts the PostgreSQL and Redis services required by the application.
 
-### 6. Apply the database schema
+### Apply the database schema
 
 ```bash
 pnpm prisma:migrate
 ```
 
-### 7. Optionally create an administrator
+### Optionally create an administrator
 
 ```bash
 SEED_ADMIN_EMAIL=admin@example.com SEED_ADMIN_PASSWORD=change-me-now pnpm seed:admin
@@ -93,7 +92,7 @@ SEED_ADMIN_EMAIL=admin@example.com SEED_ADMIN_PASSWORD=change-me-now pnpm seed:a
 
 The command creates the user when absent or promotes the existing user to `ADMIN`.
 
-### 8. Run the application
+### Run the application
 
 ```bash
 pnpm start:dev
@@ -101,12 +100,19 @@ pnpm start:dev
 
 The application listens on `PORT`, which defaults to `3000`.
 
-### 9. Check service health
+### Check service health
 
 ```bash
 curl http://localhost:3000/health/live
 curl http://localhost:3000/health/ready
 ```
+
+### Make it your own
+
+- Rename the `name` field in `package.json`.
+- Replace the signing and HMAC secrets in `.env` with high-entropy values.
+- Update the license before publishing or distributing (it ships as `UNLICENSED`).
+- `docs/` describes the template's default product; update it as your application-specific domain replaces the starter surface.
 
 ## Environment Variables
 
