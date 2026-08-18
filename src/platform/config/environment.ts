@@ -2,6 +2,9 @@ import Joi from 'joi';
 
 export type Environment = {
   ACCESS_TOKEN_TTL_SECONDS: number;
+  ARGON2_MEMORY_COST: number;
+  ARGON2_PARALLELISM: number;
+  ARGON2_TIME_COST: number;
   COOKIE_NAME: string;
   CORS_ORIGINS: string;
   DATABASE_URL: string;
@@ -20,14 +23,13 @@ export type Environment = {
   RATE_LIMIT_REFRESH_TTL_SECONDS: number;
   RATE_LIMIT_REGISTER_MAX: number;
   RATE_LIMIT_REGISTER_TTL_SECONDS: number;
-  SCRYPT_MAXMEM: number;
-  SCRYPT_N: number;
-  SCRYPT_P: number;
-  SCRYPT_R: number;
 };
 
 const environmentSchema = Joi.object<Environment>({
   ACCESS_TOKEN_TTL_SECONDS: Joi.number().integer().positive().default(600),
+  ARGON2_MEMORY_COST: Joi.number().integer().positive().default(65536),
+  ARGON2_PARALLELISM: Joi.number().integer().positive().default(4),
+  ARGON2_TIME_COST: Joi.number().integer().positive().default(3),
   COOKIE_NAME: Joi.string().trim().default('refresh_token'),
   CORS_ORIGINS: Joi.string().trim().required(),
   DATABASE_URL: Joi.string()
@@ -64,10 +66,6 @@ const environmentSchema = Joi.object<Environment>({
     .integer()
     .positive()
     .default(3600),
-  SCRYPT_MAXMEM: Joi.number().integer().positive().default(268435456),
-  SCRYPT_N: Joi.number().integer().positive().default(131072),
-  SCRYPT_P: Joi.number().integer().positive().default(1),
-  SCRYPT_R: Joi.number().integer().positive().default(8),
 }).unknown(true);
 
 export function validateEnvironment(

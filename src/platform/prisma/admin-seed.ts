@@ -1,4 +1,10 @@
-import { randomBytes, scrypt } from 'node:crypto';
+import * as argon2 from 'argon2';
+import {
+  toArgon2Options,
+  type Argon2Parameters,
+} from '../security/argon2-options';
+
+export type { Argon2Parameters } from '../security/argon2-options';
 
 type AdminSeedClient = {
   user: {
@@ -15,36 +21,17 @@ type AdminSeedClient = {
   };
 };
 
-export type ScryptParameters = {
-  maxmem: number;
-  N: number;
-  p: number;
-  r: number;
-};
-
-export const defaultScryptParameters: ScryptParameters = {
-  maxmem: 268435456,
-  N: 131072,
-  p: 1,
-  r: 8,
+export const defaultArgon2Parameters: Argon2Parameters = {
+  memoryCost: 65536,
+  parallelism: 4,
+  timeCost: 3,
 };
 
 export async function hashSeedPassword(
   password: string,
-  parameters: ScryptParameters = defaultScryptParameters,
+  parameters: Argon2Parameters = defaultArgon2Parameters,
 ): Promise<string> {
-  const salt = randomBytes(16);
-  const derivedKey = await new Promise<Buffer>((resolve, reject) => {
-    scrypt(password, salt, 64, parameters, (error, key) => {
-      if (error !== null) {
-        reject(error);
-        return;
-      }
-      resolve(key);
-    });
-  });
-
-  return `scrypt$${parameters.N}$${parameters.r}$${parameters.p}$${salt.toString('base64')}$${derivedKey.toString('base64')}`;
+  return argon2.hash(password, toArgon2Options(parameters));
 }
 
 export async function seedAdmin(

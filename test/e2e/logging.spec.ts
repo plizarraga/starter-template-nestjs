@@ -13,12 +13,10 @@ describe('platform logging (e2e)', () => {
 
   beforeAll(async () => {
     process.env = { ...originalEnvironment, ...defaultEnvironment };
-    const { pinoRedaction } = (await import(
-      '../../src/platform/logging/platform-logger.module'
-    )) as typeof import('../../src/platform/logging/platform-logger.module');
-    const { Logger: PinoNestLogger } = (await import(
-      'nestjs-pino'
-    )) as typeof import('nestjs-pino');
+    const { pinoRedaction } =
+      (await import('../../src/platform/logging/platform-logger.module')) as typeof import('../../src/platform/logging/platform-logger.module');
+    const { Logger: PinoNestLogger } =
+      (await import('nestjs-pino')) as typeof import('nestjs-pino');
     const captureStream = new Writable({
       write(chunk: Buffer, _encoding, callback) {
         chunks.push(chunk.toString());

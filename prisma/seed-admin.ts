@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import {
-  defaultScryptParameters,
+  defaultArgon2Parameters,
   hashSeedPassword,
   seedAdmin,
 } from '../src/platform/prisma/admin-seed';
@@ -34,12 +34,17 @@ async function main(): Promise<void> {
   const prisma = new PrismaClient();
   try {
     const parameters = {
-      N: readPositiveInteger('SCRYPT_N', defaultScryptParameters.N),
-      r: readPositiveInteger('SCRYPT_R', defaultScryptParameters.r),
-      p: readPositiveInteger('SCRYPT_P', defaultScryptParameters.p),
-      maxmem: readPositiveInteger(
-        'SCRYPT_MAXMEM',
-        defaultScryptParameters.maxmem,
+      memoryCost: readPositiveInteger(
+        'ARGON2_MEMORY_COST',
+        defaultArgon2Parameters.memoryCost,
+      ),
+      parallelism: readPositiveInteger(
+        'ARGON2_PARALLELISM',
+        defaultArgon2Parameters.parallelism,
+      ),
+      timeCost: readPositiveInteger(
+        'ARGON2_TIME_COST',
+        defaultArgon2Parameters.timeCost,
       ),
     };
     await seedAdmin(prisma, email, password, (value) =>

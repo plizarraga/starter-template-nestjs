@@ -140,11 +140,17 @@ describe('authentication (e2e)', () => {
   it('When a refresh session has been revoked, then the still-valid access token continues to authenticate normal requests', async () => {
     await request(app.getHttpServer())
       .post('/auth/register')
-      .send({ email: 'stateless-session@example.com', password: 'password-123' })
+      .send({
+        email: 'stateless-session@example.com',
+        password: 'password-123',
+      })
       .expect(201);
     const login = await request(app.getHttpServer())
       .post('/auth/login')
-      .send({ email: 'stateless-session@example.com', password: 'password-123' })
+      .send({
+        email: 'stateless-session@example.com',
+        password: 'password-123',
+      })
       .expect(200);
     const accessToken = (login.body as { accessToken: string }).accessToken;
 

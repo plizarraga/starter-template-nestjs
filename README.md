@@ -73,7 +73,7 @@ satisfy that spec are recorded in [`docs/EDD.md`](./docs/EDD.md).
 | Session state / rate limits | Redis via `ioredis` |
 | Access credentials | HS256 JWT, verified locally via `@nestjs/jwt` |
 | Refresh credentials | Opaque rotating cookie, HMAC-protected in Redis |
-| Password hashing | Native `node:crypto.scrypt` |
+| Password hashing | `argon2id` via the `argon2` package |
 | Validation | `class-validator` / `class-transformer` DTOs |
 | Configuration | `@nestjs/config` with Joi startup validation |
 | Logging | JSON logs via `nestjs-pino` / Pino |
@@ -227,7 +227,7 @@ All configuration is environment-driven and validated at startup.
 | `CORS_ORIGINS` | required comma-separated allowlist of web origins |
 | `COOKIE_NAME` | `refresh_token` |
 | `LOG_LEVEL` | `info` in production, `debug` in development |
-| `SCRYPT_N` / `SCRYPT_R` / `SCRYPT_P` / `SCRYPT_MAXMEM` | `131072` / `8` / `1` / `268435456` |
+| `ARGON2_MEMORY_COST` / `ARGON2_TIME_COST` / `ARGON2_PARALLELISM` | `65536` / `3` / `4` |
 | `RATE_LIMIT_REGISTER_MAX` / `RATE_LIMIT_REGISTER_TTL_SECONDS` | `5` / `3600` |
 | `RATE_LIMIT_LOGIN_MAX` / `RATE_LIMIT_LOGIN_TTL_SECONDS` | `10` / `900` |
 | `RATE_LIMIT_REFRESH_MAX` / `RATE_LIMIT_REFRESH_TTL_SECONDS` | `30` / `900` |

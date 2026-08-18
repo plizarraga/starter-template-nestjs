@@ -14,7 +14,7 @@
 
 | # | Invariant | Evidence |
 | --- | --- | --- |
-| S1 | Passwords never stored as plaintext | `src/auth/auth.service.spec.ts` (register hashes via `PasswordService`, never persists raw password); `src/auth/password.service.ts` (scrypt-only hashing) |
+| S1 | Passwords never stored as plaintext | `src/auth/auth.service.spec.ts` (register hashes via `PasswordService`, never persists raw password); `src/auth/password.service.ts` (argon2id-only hashing) |
 | S2 | Password hashes never returned publicly | `test/e2e/auth.spec.ts`, `test/e2e/admin-users.spec.ts` (`not.toHaveProperty('passwordHash')`); `src/users/users.repository.ts` (`toPublicUser`) |
 | S3 | Public registration cannot grant privileged roles | `test/e2e/auth.spec.ts` ("When registration includes a role field, then it is rejected instead of being honored"); `src/auth/auth.service.spec.ts` (register hardcodes `Role.USER`) |
 | S4 | Normal access authentication performs no session lookup | `test/e2e/auth.spec.ts` ("When a refresh session has been revoked, then the still-valid access token continues to authenticate normal requests") |

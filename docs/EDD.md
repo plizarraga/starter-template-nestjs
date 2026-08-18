@@ -20,7 +20,7 @@ microservices.
 | Session state and rate limits | Redis accessed through an encapsulated `ioredis` module |
 | Access credentials | HS256 JWTs, verified locally with `@nestjs/jwt` |
 | Refresh credentials | Opaque `sessionId.secret` cookie, stored only as an HMAC in Redis |
-| Password hashing | Native asynchronous `node:crypto.scrypt` |
+| Password hashing | `argon2id` via the `argon2` package |
 | HTTP validation | DTOs using `class-validator` and `class-transformer` |
 | Configuration | `@nestjs/config` with Joi validation at startup |
 | Logging | JSON logs through `nestjs-pino` and Pino |
@@ -102,7 +102,7 @@ refresh sessions are not stored in PostgreSQL.
 User
   id            UUID primary key
   email         unique, normalized lowercase string
-  passwordHash  scrypt encoded hash; never selected for public output
+  passwordHash  argon2id encoded hash; never selected for public output
   role          USER | ADMIN
   createdAt     timestamp with time zone
   updatedAt     timestamp with time zone
@@ -241,7 +241,7 @@ CSRF-token contract.
 | `POST /auth/refresh` | Uses the atomic Lua rotation operation. Any missing, expired, reused, or mismatched refresh credential returns 401. |
 | `POST /auth/logout` | Revokes the session identified by the refresh cookie, clears the cookie, and returns 204. It is idempotent where possible. |
 | `POST /auth/logout-all` | Requires a valid access token, revokes every indexed session for the principal, and returns 204. |
-| `PATCH /auth/password` | Requires a valid access token and current password, writes a new scrypt hash, revokes all refresh sessions, and returns 204. |
+| `PATCH /auth/password` | Requires a valid access token and current password, writes a new argon2id hash, revokes all refresh sessions, and returns 204. |
 
 `PATCH /users/me` accepts `email` and `currentPassword`. It verifies the current
 password, normalizes and updates the email, revokes all refresh sessions, and
@@ -256,23 +256,29 @@ tokens because they are intentionally stateless.
 ### 7.4 Password hashing
 
 Passwords must be at least eight characters. There are no artificial composition
-rules. The application accepts Unicode input and uses asynchronous
-`node:crypto.scrypt` with:
+rules. The application accepts Unicode input and hashes it with `argon2id`
+(via the `argon2` npm package, a native addon wrapping the reference Argon2
+implementation) using:
 
 ```text
-N       2^17
-r       8
-p       1
-maxmem  256 MiB
-salt    random, at least 16 bytes
-derived key length 64 bytes
+type         argon2id
+memoryCost   65536 KiB (64 MiB)
+timeCost     3
+parallelism  4
 ```
 
-The encoded hash stores its algorithm, parameters, salt, and derived key so a
-later login can verify older values and rehash with stronger parameters. All
-parameters remain configuration values, but these values are the secure default.
-They must be benchmarked on the deployment hardware to keep hashing below one
-second under expected load.
+`argon2.hash()` generates its own random salt and returns a self-describing
+PHC-format string (`$argon2id$v=19$m=65536,t=3,p=4$<salt>$<hash>`) — the
+salt, algorithm, and cost parameters are embedded in the stored hash, so
+`argon2.verify()` needs only the stored digest and the plaintext password.
+This is a clean-cut migration from the previous `node:crypto.scrypt`
+implementation: there is no dual-verify/back-compat path for old scrypt-format
+hashes, since this is a starter template with no real production users to
+migrate.
+
+All parameters remain configuration values, but these values are the secure
+default. They must be benchmarked on the deployment hardware to keep hashing
+below one second under expected load.
 
 ## 8. Users
 
@@ -380,7 +386,7 @@ unknown external variables.
 | `CORS_ORIGINS` | required comma-separated web-origin allowlist in deployed environments |
 | `COOKIE_NAME` | `refresh_token` |
 | `LOG_LEVEL` | `info` in production, `debug` in development |
-| `SCRYPT_N`, `SCRYPT_R`, `SCRYPT_P`, `SCRYPT_MAXMEM` | `131072`, `8`, `1`, `268435456` |
+| `ARGON2_MEMORY_COST`, `ARGON2_TIME_COST`, `ARGON2_PARALLELISM` | `65536`, `3`, `4` |
 | `RATE_LIMIT_*` | the route limits defined above |
 | `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | required only by `seed:admin` |
 
@@ -448,7 +454,7 @@ image. The cloud provider and secret manager remain intentionally out of scope.
 
 | Invariant | Implementation mechanism |
 | --- | --- |
-| S1–S2 | scrypt hashes and public-user mappers prevent plaintext storage and hash exposure. |
+| S1–S2 | argon2id hashes and public-user mappers prevent plaintext storage and hash exposure. |
 | S3 | Registration DTO has no role field; service always writes `USER`. |
 | S4–S5 | Local JWT verification constructs the principal without Redis or PostgreSQL. |
 | S6 | Configured 10-minute access-token TTL. |
@@ -475,7 +481,7 @@ PRD.
    validation, global errors, helmet, CORS, health checks, and Swagger setup.
 3. Implement users, repositories, public-user mapping, pagination, search,
    sorting, seed command, and user tests.
-4. Implement scrypt password service, JWT service and guards, Redis sessions,
+4. Implement argon2id password service, JWT service and guards, Redis sessions,
    refresh rotation Lua script, auth endpoints, and security E2E tests.
 5. Add Redis-backed rate limiting, Docker production image, GitHub Actions,
    migration deployment documentation, and final invariant-focused verification.
