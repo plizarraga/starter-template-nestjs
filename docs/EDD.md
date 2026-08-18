@@ -367,9 +367,13 @@ Exceeded limits return 429 `RATE_LIMIT_EXCEEDED`. The Redis-backed implementatio
 ensures all application replicas apply the same counters.
 
 `GET /health/live` confirms that the HTTP process is responsive. `GET
-/health/ready` checks PostgreSQL and Redis and returns only a generic unhealthy
-response if either required dependency is unavailable. It does not reveal
-connection strings or implementation diagnostics.
+/health/ready` checks PostgreSQL and Redis and reports each dependency's status.
+It returns 200 with `{ status: "ok", checks: { postgres: "up", redis: "up" } }`
+when both are available, or 503 with `status: "error"` and the per-dependency
+`checks` map marking the failing service `"down"` when either is unavailable.
+`HealthService.checkReadiness` uses `Promise.allSettled` so all failures are
+reported rather than only the first. It does not reveal connection strings or
+implementation diagnostics.
 
 ### 9.5 Swagger / OpenAPI
 

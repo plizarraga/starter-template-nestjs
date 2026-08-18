@@ -75,9 +75,13 @@ GET    /health/ready
 Equivalent conventions may be used when a target platform requires them, provided product behavior remains equivalent.
 
 The liveness endpoint confirms only that the process is responsive. The
-readiness endpoint checks required infrastructure dependencies (persistent
-storage and session storage) and returns a generic unhealthy response without
-revealing connection details when either is unavailable — see §44–45.
+readiness endpoint checks the required infrastructure dependencies (persistent
+storage and session storage) and reports each dependency's status. It returns
+200 with `{ status: "ok", checks: { postgres: "up", redis: "up" } }` when every
+dependency is available, or 503 with `status: "error"` and a per-dependency
+`checks` map (`postgres`, `redis`, each `"up"` or `"down"`) when any is
+unavailable. It never reveals connection strings, hostnames, or implementation
+diagnostics — see §44–45.
 
 ---
 
