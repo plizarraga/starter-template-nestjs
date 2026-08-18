@@ -44,7 +44,7 @@ Fix once, then it stays fixed:
 | dev (watch) | `pnpm start:dev` |
 | build | `pnpm build` |
 | unit tests | `pnpm test` |
-| one test file | `pnpm test app.controller.spec.ts` (jest pattern) |
+| one test file | `pnpm test -- <pattern>` (Vitest pattern) |
 | e2e tests | `pnpm test:e2e` |
 | coverage | `pnpm test:cov` |
 | lint | `pnpm lint` — runs eslint **with `--fix`** |
@@ -52,9 +52,9 @@ Fix once, then it stays fixed:
 
 ## Testing layout
 
-- Unit tests are colocated in `src/**/*.spec.ts` (jest `rootDir: src`).
-- E2E tests live in `test/*.e2e-spec.ts` with a **separate** jest config
-  (`test/jest-e2e.json`), matched by the `.e2e-spec.ts` suffix.
+- Unit tests are colocated in `src/**/*.spec.ts`.
+- Integration tests live in `test/integration/**/*.spec.ts`; E2E tests live in
+  `test/e2e/**/*.spec.ts`. Vitest projects select each suite.
 - `test/` and `**/*spec.ts` are excluded from the production build via
   `tsconfig.build.json`.
 

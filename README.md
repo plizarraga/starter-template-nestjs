@@ -23,13 +23,37 @@
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Production-oriented NestJS starter. Product behavior is defined in
+[`docs/PRD.md`](./docs/PRD.md) and [`docs/PRODUCT_SPEC.md`](./docs/PRODUCT_SPEC.md);
+the NestJS implementation is defined in [`docs/EDD.md`](./docs/EDD.md).
 
 ## Project setup
 
 ```bash
 $ pnpm install
 ```
+
+Node.js 24 LTS and Docker are required. pnpm only runs dependency build scripts
+explicitly reviewed in `pnpm-workspace.yaml`.
+
+## Local dependencies
+
+Start PostgreSQL and Redis before implementing or running infrastructure-backed
+features:
+
+```bash
+$ docker compose up -d
+```
+
+The application runs on the host. Local service connection settings are:
+
+```text
+PostgreSQL: postgresql://backend_starter:backend_starter@localhost:5432/backend_starter
+Redis:      redis://localhost:6379
+```
+
+Stop services with `docker compose down`. Add `-v` only when local database and
+Redis data should be removed.
 
 ## Compile and run the project
 
@@ -52,6 +76,9 @@ $ pnpm run test
 
 # e2e tests
 $ pnpm run test:e2e
+
+# integration tests (requires Docker)
+$ pnpm run test:integration
 
 # test coverage
 $ pnpm run test:cov

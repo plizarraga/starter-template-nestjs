@@ -1,2 +1,5 @@
 allowBuilds:
-  unrs-resolver: set this to true or false
+  cpu-features: false
+  protobufjs: false
+  ssh2: false
+  unrs-resolver: true
