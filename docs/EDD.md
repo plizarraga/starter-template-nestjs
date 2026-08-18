@@ -42,11 +42,13 @@ src/
     auth.module.ts
     auth.controller.ts
     auth.service.ts
-    auth.repository.ts              # Redis-backed session access
+    auth-session.repository.ts       # Redis-backed session access
+    access-token.service.ts          # JWT issuing and verification
+    access-token.guard.ts
+    password.service.ts
     dto/
     guards/
     decorators/
-    strategies/                     # JWT issuing and verification helpers
   users/
     users.module.ts
     users.controller.ts
@@ -54,8 +56,10 @@ src/
     users.repository.ts              # Prisma-backed user access
     dto/
   platform/
+    platform.module.ts
     config/
     errors/
+    http/                            # app bootstrap, CORS/origin validation
     logging/
     prisma/
     redis/
@@ -80,8 +84,9 @@ The implementation adds these production dependencies:
 - `class-validator` and `class-transformer` for request DTOs.
 - `nestjs-pino` and `pino` for structured logging and redaction.
 - `@nestjs/throttler` with Redis-backed storage for distributed rate limiting.
-- `cookie-parser`, `helmet`, `@nestjs/swagger`, and `swagger-ui-express` for
-  cookie parsing, HTTP hardening, and non-production API documentation.
+- `helmet`, `@nestjs/swagger`, and `swagger-ui-express` for HTTP hardening and
+  non-production API documentation. The refresh cookie is parsed manually from
+  the `Cookie` header rather than through a cookie-parsing middleware.
 
 Development dependencies include `vitest`, `@vitest/coverage-v8`,
 `testcontainers`, and `supertest`.

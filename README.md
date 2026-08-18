@@ -55,6 +55,17 @@ Redis:      redis://localhost:6379
 Stop services with `docker compose down`. Add `-v` only when local database and
 Redis data should be removed.
 
+Apply the Prisma schema to the local database, then optionally seed or promote
+an admin user (reads `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD`):
+
+```bash
+$ pnpm prisma:migrate
+$ SEED_ADMIN_EMAIL=admin@example.com SEED_ADMIN_PASSWORD=change-me-now pnpm seed:admin
+```
+
+`seed:admin` is idempotent — running it again against the same email promotes
+that user to `ADMIN` rather than duplicating it.
+
 ## Compile and run the project
 
 ```bash

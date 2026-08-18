@@ -64,9 +64,20 @@ PATCH  /users/me
 GET    /users
 GET    /users/:id
 PATCH  /users/:id
+
+
+Operations
+
+GET    /health/live
+GET    /health/ready
 ```
 
 Equivalent conventions may be used when a target platform requires them, provided product behavior remains equivalent.
+
+The liveness endpoint confirms only that the process is responsive. The
+readiness endpoint checks required infrastructure dependencies (persistent
+storage and session storage) and returns a generic unhealthy response without
+revealing connection details when either is unavailable — see §44–45.
 
 ---
 
@@ -841,6 +852,14 @@ The implementation must explicitly define which administrative fields may be mod
 
 Role changes must be authorization-protected.
 
+The system must prevent an operation that would leave zero users with the
+`ADMIN` role, and must prevent an administrator from removing their own
+`ADMIN` role. Both cases return:
+
+```http
+409 Conflict
+```
+
 ---
 
 # 31. Role Change Semantics
@@ -956,9 +975,12 @@ SESSION_NOT_FOUND
 
 UNAUTHORIZED
 FORBIDDEN
+NOT_FOUND
 
 USER_NOT_FOUND
 USER_EMAIL_ALREADY_EXISTS
+CANNOT_REMOVE_LAST_ADMIN
+CANNOT_REMOVE_OWN_ADMIN_ROLE
 
 RATE_LIMIT_EXCEEDED
 
@@ -1368,29 +1390,34 @@ All requests are traceable through a request ID.
 
 A concrete Backend Starter implementation is product-complete when:
 
-- [ ] Authentication endpoints conform to this specification.
-- [ ] Access authentication is stateless.
-- [ ] Refresh sessions are stateful and revocable.
-- [ ] Refresh rotation is concurrency-safe.
-- [ ] Password changes revoke sessions.
-- [ ] RBAC is enforced.
-- [ ] Users can manage their profile.
-- [ ] Administrators can manage users.
-- [ ] User listing supports pagination.
-- [ ] User listing supports search.
-- [ ] User listing supports sorting.
-- [ ] Input validation is standardized.
-- [ ] Error handling is centralized.
-- [ ] Error responses follow the standard contract.
-- [ ] Logging is centralized.
-- [ ] Logging is structured.
-- [ ] Request IDs propagate across logs and errors.
-- [ ] Sensitive information is redacted.
-- [ ] Infrastructure failures fail safely.
-- [ ] Unit tests exist.
-- [ ] Integration tests exist.
-- [ ] E2E tests cover critical security behavior.
-- [ ] Product behavior is documented independently from implementation technology.
+- [x] Authentication endpoints conform to this specification.
+- [x] Access authentication is stateless.
+- [x] Refresh sessions are stateful and revocable.
+- [x] Refresh rotation is concurrency-safe.
+- [x] Password changes revoke sessions.
+- [x] RBAC is enforced.
+- [x] Users can manage their profile.
+- [x] Administrators can manage users.
+- [x] User listing supports pagination.
+- [x] User listing supports search.
+- [x] User listing supports sorting.
+- [x] Input validation is standardized.
+- [x] Error handling is centralized.
+- [x] Error responses follow the standard contract.
+- [x] Logging is centralized.
+- [x] Logging is structured.
+- [x] Request IDs propagate across logs and errors.
+- [x] Sensitive information is redacted.
+- [x] Infrastructure failures fail safely.
+- [x] Unit tests exist.
+- [x] Integration tests exist.
+- [x] E2E tests cover critical security behavior.
+- [x] Product behavior is documented independently from implementation technology.
+
+The NestJS reference implementation satisfies every item above; its
+engineering decisions are recorded in `EDD.md`, and the S1–S16 invariant
+evidence is recorded per-test in that implementation's own tracking
+(`.scratch/backend-starter-implementation/issues/10-verify-security-invariants.md`).
 
 ---
 

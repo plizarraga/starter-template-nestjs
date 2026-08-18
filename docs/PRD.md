@@ -706,37 +706,40 @@ These capabilities may be introduced by downstream starters or applications.
 
 A conforming starter must satisfy all of the following:
 
-- [ ] Users can register.
-- [ ] Passwords are securely hashed.
-- [ ] Public registration cannot assign privileged roles.
-- [ ] Users can authenticate.
-- [ ] Authentication creates independent sessions.
-- [ ] Access credentials are short-lived.
-- [ ] Normal access validation is stateless.
-- [ ] Normal access validation requires no persistent-user lookup.
-- [ ] Normal access validation requires no session lookup.
-- [ ] Refresh credentials are opaque.
-- [ ] Refresh sessions are revocable.
-- [ ] Refresh credentials rotate.
-- [ ] Used refresh credentials cannot be reused successfully.
-- [ ] Concurrent refresh cannot successfully consume one credential multiple times.
-- [ ] Multiple sessions per user are supported.
-- [ ] Current-session logout works.
-- [ ] Logout-all works.
-- [ ] Password changes revoke refresh sessions.
-- [ ] RBAC supports `USER` and `ADMIN`.
-- [ ] User listing supports pagination.
-- [ ] User listing supports search.
-- [ ] User listing supports sorting.
-- [ ] Request validation is centralized.
-- [ ] Error handling is centralized.
-- [ ] Errors follow a standard contract.
-- [ ] Logging is centralized.
-- [ ] Logs are structured.
-- [ ] Requests can be correlated through a request ID.
-- [ ] Sensitive authentication information is not logged.
-- [ ] Critical functionality has automated tests.
-- [ ] Security-critical flows have E2E tests.
+- [x] Users can register.
+- [x] Passwords are securely hashed.
+- [x] Public registration cannot assign privileged roles.
+- [x] Users can authenticate.
+- [x] Authentication creates independent sessions.
+- [x] Access credentials are short-lived.
+- [x] Normal access validation is stateless.
+- [x] Normal access validation requires no persistent-user lookup.
+- [x] Normal access validation requires no session lookup.
+- [x] Refresh credentials are opaque.
+- [x] Refresh sessions are revocable.
+- [x] Refresh credentials rotate.
+- [x] Used refresh credentials cannot be reused successfully.
+- [x] Concurrent refresh cannot successfully consume one credential multiple times.
+- [x] Multiple sessions per user are supported.
+- [x] Current-session logout works.
+- [x] Logout-all works.
+- [x] Password changes revoke refresh sessions.
+- [x] RBAC supports `USER` and `ADMIN`.
+- [x] User listing supports pagination.
+- [x] User listing supports search.
+- [x] User listing supports sorting.
+- [x] Request validation is centralized.
+- [x] Error handling is centralized.
+- [x] Errors follow a standard contract.
+- [x] Logging is centralized.
+- [x] Logs are structured.
+- [x] Requests can be correlated through a request ID.
+- [x] Sensitive authentication information is not logged.
+- [x] Critical functionality has automated tests.
+- [x] Security-critical flows have E2E tests.
+
+The NestJS implementation (`docs/EDD.md`) satisfies every criterion above; see
+`docs/PRODUCT_SPEC.md` §51–52 for the invariant-by-invariant evidence.
 
 ---
 
