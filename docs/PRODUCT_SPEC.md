@@ -1413,6 +1413,7 @@ A concrete Backend Starter implementation is product-complete when:
 - [x] Integration tests exist.
 - [x] E2E tests cover critical security behavior.
 - [x] Product behavior is documented independently from implementation technology.
+- [x] Interactive API documentation exposes schemas, examples, and authenticated requests.
 
 The NestJS reference implementation satisfies every item above; its
 engineering decisions are recorded in `EDD.md`, which maps the S1–S16
@@ -1474,3 +1475,30 @@ The EDD is responsible for choosing:
 - package dependencies.
 
 This separation allows the same product contract to be implemented consistently across multiple backend ecosystems.
+
+---
+
+# 54. Interactive API Documentation
+
+A conforming starter must ship interactive API documentation that developers
+can open to learn and exercise the API. The documentation must:
+
+- Cover every public endpoint with its HTTP method, path, and access
+  requirements.
+- Expose the full request contract: body schemas, path and query parameters,
+  and validation constraints (required fields, formats, enums, and length
+  limits).
+- Expose the full response contract: the success schema and the error schema
+  for every endpoint, using the standard error shape from §33.
+- Include realistic, valid examples for each request body and each success
+  response, executable without hand-authoring a payload.
+- Declare the Bearer access-credential scheme (§8) and let a developer attach
+  an access token, so protected endpoints can be exercised directly from the
+  documentation UI (§9).
+- Be generated from the same contracts that validate requests and serialize
+  responses, so the documentation cannot drift from the implemented API.
+- Be available outside production only, consistent with the configuration
+  requirements of §43 and the security invariants of §51.
+
+The documentation generator is an implementation decision recorded in the EDD;
+this specification defines only the required behavior above.

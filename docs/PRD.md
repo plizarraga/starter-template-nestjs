@@ -87,6 +87,13 @@ Errors and logs must follow application-wide standards rather than being indepen
 
 The starter should provide foundational capabilities without introducing unnecessary business functionality.
 
+## 4.8 Self-Documenting API
+
+The API must ship with interactive documentation generated from the same
+contracts that validate and serialize requests, so it cannot drift from the
+implementation. The documentation must expose request and response schemas,
+executable examples, and a way to authenticate protected requests.
+
 ---
 
 # 5. Core Capabilities
@@ -111,6 +118,7 @@ Every implementation must provide:
 16. Structured application logs
 17. Automated testing
 18. Environment-driven configuration
+19. Interactive API documentation
 
 ---
 
@@ -737,6 +745,7 @@ A conforming starter must satisfy all of the following:
 - [x] Sensitive authentication information is not logged.
 - [x] Critical functionality has automated tests.
 - [x] Security-critical flows have E2E tests.
+- [x] Interactive API documentation is generated with schemas, examples, and authenticated requests.
 
 The NestJS implementation (`docs/EDD.md`) satisfies every criterion above; see
 `docs/PRODUCT_SPEC.md` §51–52 for the invariant-by-invariant evidence.
