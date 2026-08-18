@@ -92,9 +92,10 @@ Fix once, then it stays fixed:
 - Not full strict mode: `strictNullChecks: true` but `noImplicitAny: false`.
 - Configuration is `@nestjs/config` with Joi-validated startup checks
   (`src/platform/config/environment.ts`). See `docs/EDD.md` §10 for the full
-  variable table. There is no `.env` loading in production; local development
-  uses `docker compose up -d` for PostgreSQL/Redis and real environment
-  variables (or a local `.env` if you add one — it isn't committed).
+  variable table. Copy `.env.example` to `.env` for local development
+  (`.env` is git-ignored); `.env` is never loaded when `NODE_ENV=production`
+  — production must receive real environment variables from the deployment
+  platform.
 - Persistence is PostgreSQL through Prisma (`prisma/`); session state and rate
   limits live in Redis through an `ioredis`-backed platform service.
 - CI runs on pull requests via `.github/workflows/pull-request.yml`.
