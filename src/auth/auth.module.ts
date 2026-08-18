@@ -20,11 +20,13 @@ import { PasswordService } from './password.service';
       useFactory: (config: ConfigService<Environment, true>) => ({
         secret: config.getOrThrow('JWT_SECRET'),
         signOptions: {
+          algorithm: 'HS256',
           audience: config.getOrThrow('JWT_AUDIENCE'),
           expiresIn: config.getOrThrow('ACCESS_TOKEN_TTL_SECONDS'),
           issuer: config.getOrThrow('JWT_ISSUER'),
         },
         verifyOptions: {
+          algorithms: ['HS256'],
           audience: config.getOrThrow('JWT_AUDIENCE'),
           issuer: config.getOrThrow('JWT_ISSUER'),
         },

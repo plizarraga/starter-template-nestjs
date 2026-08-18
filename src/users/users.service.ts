@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { Role, User } from '@prisma/client';
 import { PublicUser, UsersRepository } from './users.repository';
 
+export type { PublicUser } from './users.repository';
+
 @Injectable()
 export class UsersService {
   constructor(private readonly users: UsersRepository) {}
