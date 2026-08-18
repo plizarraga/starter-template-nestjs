@@ -114,6 +114,18 @@ curl http://localhost:3000/health/ready
 - Replace the copyright holder in `LICENSE` with your own name or entity before distributing.
 - `docs/` describes the template's default product; update it as your application-specific domain replaces the starter surface.
 
+These files describe the template's default surface and can be deleted or
+replaced once your project diverges from it:
+
+| File or directory | Delete when |
+| --- | --- |
+| `docs/PRD.md`, `docs/PRODUCT_SPEC.md`, `docs/EDD.md` | Your product contract replaces the starter's auth/users/platform baseline |
+| `docs/agents/` | You don't use the agent issue-tracker/triage/domain-doc workflow |
+| `.github/ISSUE_TEMPLATE/` | Your issue templates diverge from the starter's bug/feature forms |
+
+`AGENTS.md` documents the starter's architecture and commands; keep it while
+the code it describes is still yours.
+
 ## Environment Variables
 
 The application validates configuration at startup. Defaults apply only where shown.

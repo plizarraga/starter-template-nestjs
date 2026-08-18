@@ -147,3 +147,17 @@ constrains the change before writing a new one.
 - Persistence is PostgreSQL through Prisma (`prisma/`); session state and rate
   limits live in Redis through an `ioredis`-backed platform service.
 - CI runs on pull requests via `.github/workflows/pull-request.yml`.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs live as GitHub issues via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Five canonical triage roles map to the labels `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` plus `docs/adr/` at the repo root. See `docs/agents/domain.md`.
