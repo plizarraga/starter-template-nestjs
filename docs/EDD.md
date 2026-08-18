@@ -103,7 +103,10 @@ Prisma ORM v7 replaces the Rust query engine with a driver adapter: the
 generated client is emitted to `src/generated/prisma` (provider
 `prisma-client`, `moduleFormat = "cjs"`) and every `PrismaClient` is
 instantiated with a `PrismaPg` adapter. The adapter's `schema` option selects
-the PostgreSQL schema (default `public` via `DATABASE_SCHEMA`).
+the PostgreSQL schema (default `public` via `DATABASE_SCHEMA`). `DATABASE_SCHEMA`
+only redirects generated queries; it is not a multi-schema migration feature —
+standard migrations still target `public`, and any alternate schema's tables
+must already exist there.
 
 ```text
 User
@@ -129,6 +132,10 @@ hash is needed for login or sensitive profile changes.
 - CI and production apply committed migrations with `prisma migrate deploy`.
 - The API process never runs migrations at startup; rollout automation runs
   them before starting new application replicas.
+- Prisma ORM v7 does not regenerate the client during migrations. After editing
+  `prisma/schema.prisma`, run `pnpm prisma:generate` and commit the updated
+  `src/generated/prisma`; CI fails a pull request whose committed client is out
+  of sync with the schema.
 - `prisma.config.ts` is the Prisma CLI configuration. It points the CLI at
   `prisma/schema.prisma` and declares the seed command
   (`ts-node prisma/seed-admin.ts`, run with `prisma db seed`). Because the

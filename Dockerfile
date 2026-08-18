@@ -10,12 +10,12 @@ RUN apk add --no-cache openssl \
 FROM base AS dependencies
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
-COPY prisma ./prisma
-RUN pnpm exec prisma generate
 
 FROM dependencies AS build
 COPY tsconfig.json tsconfig.build.json nest-cli.json ./
 COPY src ./src
+COPY prisma ./prisma
+RUN pnpm exec prisma generate
 RUN pnpm build
 
 FROM dependencies AS production-dependencies

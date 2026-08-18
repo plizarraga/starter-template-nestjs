@@ -25,6 +25,9 @@ jobs:
       - name: Generate Prisma client
         run: pnpm prisma:generate
 
+      - name: Verify Prisma client is committed and up to date
+        run: git diff --exit-code -- src/generated/prisma
+
       - name: Lint
         run: pnpm lint
 

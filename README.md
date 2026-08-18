@@ -84,6 +84,10 @@ This starts the PostgreSQL and Redis services required by the application.
 pnpm prisma:migrate
 ```
 
+Prisma ORM 7 does not regenerate the client during migrations. After editing
+`prisma/schema.prisma`, run `pnpm prisma:generate` and commit the updated
+`src/generated/prisma` so builds and CI stay in sync.
+
 ### Optionally create an administrator
 
 ```bash
@@ -150,6 +154,7 @@ The application validates configuration at startup. Defaults apply only where sh
 | `NODE_ENV` | Yes | Application environment: `development`, `test`, or `production`. |
 | `PORT` | No | HTTP port. Defaults to `3000`. |
 | `DATABASE_URL` | Yes | PostgreSQL connection URL. |
+| `DATABASE_SCHEMA` | No | PostgreSQL schema targeted by generated queries. Defaults to `public`. |
 | `REDIS_URL` | Yes | Redis connection URL. |
 | `JWT_SECRET` | Yes | At least 32-character HS256 access-token signing secret. |
 | `JWT_ISSUER` | Yes | Expected JWT issuer claim. |
@@ -177,6 +182,7 @@ The application validates configuration at startup. Defaults apply only where sh
 ```text
 src/
 ├── auth/                  # Authentication, access tokens, refresh sessions, and RBAC
+├── generated/             # Prisma client emitted by `prisma generate` (committed)
 ├── platform/              # Configuration, errors, HTTP setup, logging, persistence, rate limits, and health
 ├── users/                 # User profile and administrator user-management capabilities
 ├── app.module.ts          # Root application module
