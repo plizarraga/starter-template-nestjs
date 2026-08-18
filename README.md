@@ -111,7 +111,7 @@ curl http://localhost:3000/health/ready
 
 - Rename the `name` field in `package.json`.
 - Replace the signing and HMAC secrets in `.env` with high-entropy values.
-- Update the license before publishing or distributing (it ships as `UNLICENSED`).
+- Replace the copyright holder in `LICENSE` with your own name or entity before distributing.
 - `docs/` describes the template's default product; update it as your application-specific domain replaces the starter surface.
 
 ## Environment Variables
@@ -257,4 +257,4 @@ Before changing authentication, sessions, errors, or logging, review [`docs/PROD
 
 ## License
 
-UNLICENSED. Update the license before publishing or distributing this project.
+[MIT](./LICENSE), Copyright (c) 2026 Pedro Lizárraga.

@@ -2,9 +2,9 @@
   "name": "starter-template-nestjs",
   "version": "0.0.1",
   "description": "Starter template for NestJS",
-  "author": "",
+  "author": "Pedro Lizárraga",
   "private": true,
-  "license": "UNLICENSED",
+  "license": "MIT",
   "packageManager": "pnpm@11.5.1",
   "scripts": {
     "build": "nest build",
