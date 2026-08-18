@@ -41,6 +41,7 @@ export function configureApplication(app: NestExpressApplication): void {
             'scoped to /auth.',
         )
         .setVersion('1.0')
+        .addTag('health', 'Liveness and readiness probes')
         .addTag('auth', 'Authentication and session management')
         .addTag('users', 'Profile and user administration (RBAC)')
         .addBearerAuth(
