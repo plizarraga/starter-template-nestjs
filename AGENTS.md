@@ -59,7 +59,7 @@ Fix once, then it stays fixed:
 | one test file | `pnpm test -- <pattern>` (Vitest pattern) |
 | integration tests | `pnpm test:integration` (Testcontainers; Docker required) |
 | e2e tests | `pnpm test:e2e` (Testcontainers; Docker required) |
-| coverage | `pnpm test:cov` |
+| coverage | `pnpm test:coverage` |
 | lint | `pnpm lint` — runs eslint **with `--fix`** |
 | format | `pnpm format` (prettier --write over `src/**/*.ts` `test/**/*.ts`) |
 | generate Prisma client | `pnpm prisma:generate` |

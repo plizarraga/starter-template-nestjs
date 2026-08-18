@@ -420,7 +420,7 @@ Target scripts are:
 pnpm test                 # unit project
 pnpm test:integration     # integration project
 pnpm test:e2e             # e2e project
-pnpm test:cov             # all projects with V8 coverage
+pnpm test:coverage             # all projects with V8 coverage
 pnpm test -- <pattern>    # focused Vitest run
 ```
 

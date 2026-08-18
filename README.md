@@ -1,351 +1,254 @@
 # Backend Starter (NestJS)
 
-A production-oriented NestJS starter template. Clone it, rename it, and start
-writing your application's business logic — authentication, authorization,
-users, validation, error handling, logging, rate limiting, and delivery are
-already solved so you don't have to design them again for every new backend.
+A production-oriented NestJS starter template that provides secure authentication, user management, and shared platform capabilities so application-specific domain work can start from a consistent baseline.
 
-## Table of contents
+## Overview
 
-- [Why this exists](#why-this-exists)
-- [Features](#features)
-- [Tech stack](#tech-stack)
-- [Prerequisites](#prerequisites)
-- [Getting started](#getting-started)
-- [Project structure](#project-structure)
-- [Configuration](#configuration)
-- [API surface](#api-surface)
-- [Available scripts](#available-scripts)
-- [Testing](#testing)
-- [Deployment](#deployment)
-- [Documentation](#documentation)
-- [License](#license)
+Backend applications often rebuild the same foundations: authentication, authorization, session revocation, validation, error handling, logging, and operational health checks. This project provides those capabilities as a modular NestJS application backed by PostgreSQL and Redis.
 
-## Why this exists
-
-Most backend projects reimplement the same foundational concerns before any
-real feature work can start: login, sessions, roles, request validation,
-consistent error responses, structured logs, and a way to ship the thing.
-This template provides all of that as a secure-by-default baseline, so a new
-project can begin at "build the domain" instead of "build the plumbing."
+It is a starter, not a complete product. Application-specific business domains are intentionally outside its scope.
 
 ## Features
 
-- **Authentication** — email/password login issuing a short-lived, stateless
-  JWT access token plus a long-lived, opaque, rotating refresh credential
-  delivered as an HttpOnly cookie.
-- **Sessions** — refresh sessions are tracked server-side in Redis, support
-  multiple simultaneous sessions per user, and are individually or fully
-  revocable (logout / logout-all). Refresh rotation is concurrency-safe:
-  reusing a consumed refresh credential always fails, and simultaneous
-  refresh attempts cannot both succeed.
-- **Authorization** — role-based access control (`USER` / `ADMIN`) via a
-  guard and a `@Roles()` decorator.
-- **User management** — self-service profile/password management plus an
-  admin API for listing (pagination, search, sorting), reading, and updating
-  users, with guardrails against removing the last administrator.
-- **Validation** — every request body, query, and path parameter is
-  validated through DTOs; unknown properties are rejected.
-- **Centralized error handling** — every error, from validation to unhandled
-  exceptions, is normalized into one stable JSON contract (`statusCode`,
-  `code`, `message`, `timestamp`, `path`, `requestId`) and never leaks
-  infrastructure internals.
-- **Structured logging** — JSON logs with request correlation and automatic
-  redaction of passwords, tokens, cookies, and secrets.
-- **Rate limiting** — Redis-backed, per-route limits on the authentication
-  endpoints, consistent across horizontally scaled instances.
-- **Health checks** — liveness and readiness endpoints for orchestrators.
-- **Reproducible delivery** — multi-stage Docker image, CI on every pull
-  request, and a migration-before-rollout deployment model.
+- Email and password registration and login.
+- Short-lived JWT access tokens and opaque, rotating refresh cookies.
+- Redis-backed, revocable sessions with logout and logout-all support.
+- Role-based access control with `USER` and `ADMIN` roles.
+- Self-service profile and password management.
+- Admin user listing, search, sorting, retrieval, and updates.
+- DTO validation and a standardized JSON error contract.
+- Structured JSON logging, request IDs, sensitive-data redaction, and rate limits.
+- Liveness and readiness health checks.
+- Unit, integration, and end-to-end test suites.
 
-Product behavior is specified independently of this implementation in
-[`docs/PRD.md`](./docs/PRD.md) and
-[`docs/PRODUCT_SPEC.md`](./docs/PRODUCT_SPEC.md), including 16 mandatory
-security invariants (S1–S16). The NestJS-specific engineering decisions that
-satisfy that spec are recorded in [`docs/EDD.md`](./docs/EDD.md).
+## Tech Stack
 
-## Tech stack
-
-| Concern | Choice |
+| Area | Technology |
 | --- | --- |
 | Runtime | Node.js 24 LTS, TypeScript, NestJS 11 |
-| Persistent data | PostgreSQL via Prisma |
-| Session state / rate limits | Redis via `ioredis` |
-| Access credentials | HS256 JWT, verified locally via `@nestjs/jwt` |
-| Refresh credentials | Opaque rotating cookie, HMAC-protected in Redis |
-| Password hashing | `argon2id` via the `argon2` package |
-| Validation | `class-validator` / `class-transformer` DTOs |
-| Configuration | `@nestjs/config` with Joi startup validation |
-| Logging | JSON logs via `nestjs-pino` / Pino |
-| Tests | Vitest, V8 coverage, Testcontainers |
-| API docs | Swagger/OpenAPI at `/docs` (non-production only) |
-| Delivery | Multi-stage Docker image, GitHub Actions |
+| Package manager | pnpm |
+| Database | PostgreSQL with Prisma |
+| Sessions and rate limits | Redis with `ioredis` |
+| Authentication | HS256 JWTs and opaque rotating refresh cookies |
+| Password hashing | Argon2id |
+| Validation and configuration | `class-validator`, `class-transformer`, `@nestjs/config`, and Joi |
+| Logging | `nestjs-pino` and Pino |
+| API documentation | Swagger/OpenAPI in non-production environments |
+| Testing | Vitest, V8 coverage, and Testcontainers |
+| Delivery | Docker and GitHub Actions |
 
-## Prerequisites
+## Requirements
 
-- Node.js 24 LTS
-- [pnpm](https://pnpm.io)
-- Docker (for local PostgreSQL/Redis and for integration/E2E tests)
+- Node.js 24 LTS.
+- pnpm 11.5.1, as declared in `package.json`.
+- Docker for local PostgreSQL and Redis, and for integration and end-to-end tests.
 
-## Getting started
+## Getting Started
 
-### 1. Install dependencies
-
-```bash
-$ pnpm install
-```
-
-pnpm only runs dependency build scripts explicitly reviewed in
-`pnpm-workspace.yaml`. On a fresh clone this blocks every `pnpm` command with:
-
-```text
-[ERR_PNPM_IGNORED_BUILDS] Ignored build scripts: unrs-resolver@1.12.2
-```
-
-Fix it once with `pnpm approve-builds` (enable `unrs-resolver`), or set
-`allowBuilds: { unrs-resolver: true }` in `pnpm-workspace.yaml`.
-
-### 2. Start local infrastructure
+### 1. Clone the repository
 
 ```bash
-$ docker compose up -d
+git clone <repository-url>
 ```
 
-This starts PostgreSQL and Redis with the following local connection
-settings:
-
-```text
-PostgreSQL: postgresql://backend_starter:backend_starter@localhost:5432/backend_starter
-Redis:      redis://localhost:6379
-```
-
-Stop services with `docker compose down`. Add `-v` only when local database
-and Redis data should be removed.
-
-### 3. Configure environment variables
+### 2. Enter the project directory
 
 ```bash
-$ cp .env.example .env
+cd starter-template-nestjs
 ```
 
-`.env.example` documents every variable with local-development defaults that
-match `docker-compose.yml`. Replace `JWT_SECRET` and
-`REFRESH_TOKEN_HMAC_SECRET` with real high-entropy values outside local
-development — see [Configuration](#configuration) for the full reference.
-`.env` is git-ignored and is never loaded when `NODE_ENV=production`; the
-application validates configuration at startup and refuses to boot if
-anything required is missing or malformed.
-
-### 4. Apply the database schema
+### 3. Install dependencies
 
 ```bash
-$ pnpm prisma:migrate
+pnpm install
 ```
 
-### 5. (Optional) Create the first administrator
+### 4. Create local configuration
 
 ```bash
-$ SEED_ADMIN_EMAIL=admin@example.com SEED_ADMIN_PASSWORD=change-me-now pnpm seed:admin
+cp .env.example .env
 ```
 
-`seed:admin` is idempotent — running it again against the same email promotes
-that user to `ADMIN` rather than duplicating it.
+Use the local-development values in `.env.example`, then replace signing and HMAC secrets with high-entropy values outside local development. `.env` is ignored by Git and is not loaded when `NODE_ENV=production`.
 
-### 6. Run the app
+### 5. Start local infrastructure
 
 ```bash
-$ pnpm start:dev
+docker compose up -d
 ```
 
-The API listens on `PORT` (default `3000`). In non-production environments,
-interactive API docs are served at `/docs`.
+This starts the PostgreSQL and Redis services required by the application.
 
-### 7. Verify it's alive
+### 6. Apply the database schema
 
 ```bash
-$ curl http://localhost:3000/health/live
-$ curl http://localhost:3000/health/ready
+pnpm prisma:migrate
 ```
 
-## Project structure
+### 7. Optionally create an administrator
+
+```bash
+SEED_ADMIN_EMAIL=admin@example.com SEED_ADMIN_PASSWORD=change-me-now pnpm seed:admin
+```
+
+The command creates the user when absent or promotes the existing user to `ADMIN`.
+
+### 8. Run the application
+
+```bash
+pnpm start:dev
+```
+
+The application listens on `PORT`, which defaults to `3000`.
+
+### 9. Check service health
+
+```bash
+curl http://localhost:3000/health/live
+curl http://localhost:3000/health/ready
+```
+
+## Environment Variables
+
+The application validates configuration at startup. Defaults apply only where shown.
+
+| Variable | Required | Description |
+| --- | --- | --- |
+| `NODE_ENV` | Yes | Application environment: `development`, `test`, or `production`. |
+| `PORT` | No | HTTP port. Defaults to `3000`. |
+| `DATABASE_URL` | Yes | PostgreSQL connection URL. |
+| `REDIS_URL` | Yes | Redis connection URL. |
+| `JWT_SECRET` | Yes | At least 32-character HS256 access-token signing secret. |
+| `JWT_ISSUER` | Yes | Expected JWT issuer claim. |
+| `JWT_AUDIENCE` | Yes | Expected JWT audience claim. |
+| `ACCESS_TOKEN_TTL_SECONDS` | No | Access-token lifetime in seconds. Defaults to `600`. |
+| `REFRESH_TOKEN_TTL_DAYS` | No | Refresh-session lifetime in days. Defaults to `30`. |
+| `REFRESH_TOKEN_HMAC_SECRET` | Yes | At least 32-character secret for refresh-token HMACs; keep it distinct from `JWT_SECRET`. |
+| `COOKIE_NAME` | No | Refresh-cookie name. Defaults to `refresh_token`. |
+| `CORS_ORIGINS` | Yes | Comma-separated allowlist of browser origins. |
+| `LOG_LEVEL` | No | Pino log level. Defaults to `debug` outside production and `info` in production. |
+| `ARGON2_MEMORY_COST` | No | Argon2 memory cost. Defaults to `65536`. |
+| `ARGON2_TIME_COST` | No | Argon2 time cost. Defaults to `3`. |
+| `ARGON2_PARALLELISM` | No | Argon2 parallelism. Defaults to `4`. |
+| `RATE_LIMIT_REGISTER_MAX` | No | Maximum registration requests per rate-limit window. Defaults to `5`. |
+| `RATE_LIMIT_REGISTER_TTL_SECONDS` | No | Registration rate-limit window in seconds. Defaults to `3600`. |
+| `RATE_LIMIT_LOGIN_MAX` | No | Maximum login requests per rate-limit window. Defaults to `10`. |
+| `RATE_LIMIT_LOGIN_TTL_SECONDS` | No | Login rate-limit window in seconds. Defaults to `900`. |
+| `RATE_LIMIT_REFRESH_MAX` | No | Maximum refresh requests per rate-limit window. Defaults to `30`. |
+| `RATE_LIMIT_REFRESH_TTL_SECONDS` | No | Refresh rate-limit window in seconds. Defaults to `900`. |
+| `SEED_ADMIN_EMAIL` | Only for seeding | Email used by `pnpm seed:admin`. |
+| `SEED_ADMIN_PASSWORD` | Only for seeding | Password used by `pnpm seed:admin`. |
+
+## Project Structure
 
 ```text
 src/
-  main.ts                # bootstrap
-  app.module.ts
-  auth/                   # authentication, sessions, RBAC
-    auth.controller.ts
-    auth.service.ts
-    auth-session.repository.ts   # Redis-backed refresh sessions
-    access-token.service.ts      # JWT issuing/verification
-    access-token.guard.ts
-    password.service.ts
-    guards/ decorators/ dto/
-  users/                  # profile + admin user management
-    users.controller.ts
-    users.service.ts
-    users.repository.ts   # Prisma-backed
-    dto/
-  platform/               # cross-cutting concerns, shared by every feature
-    config/                # environment validation
-    errors/                # standard error contract
-    http/                  # app bootstrap, CORS/origin validation
-    logging/                # structured logs + redaction
-    prisma/ redis/          # datastore clients
-    rate-limit/             # Redis-backed throttling
-    request-id/             # request correlation
-    health/                 # liveness/readiness
+├── auth/                  # Authentication, access tokens, refresh sessions, and RBAC
+├── platform/              # Configuration, errors, HTTP setup, logging, persistence, rate limits, and health
+├── users/                 # User profile and administrator user-management capabilities
+├── app.module.ts          # Root application module
+└── main.ts                # Application bootstrap
 prisma/
-  schema.prisma
-  migrations/
-  seed-admin.ts
+├── migrations/            # Committed database migrations
+├── schema.prisma          # Prisma schema
+└── seed-admin.ts          # Explicit administrator seed command
 test/
-  integration/            # Testcontainers-backed
-  e2e/                     # full app + Testcontainers
+├── e2e/                   # Full-application tests using Testcontainers
+└── integration/           # Datastore integration tests using Testcontainers
+docs/
+├── PRD.md                 # Product requirements
+├── PRODUCT_SPEC.md        # API contract and security invariants
+└── EDD.md                 # NestJS implementation decisions
 ```
 
-Controllers only translate HTTP input to DTOs and delegate to services.
-Services own authorization-relevant business rules. Repositories own
-datastore access. A feature never reaches into another feature's repository
-directly — it depends on that feature's exported service.
+Controllers translate HTTP requests into DTOs and delegate to services. Services contain authorization-relevant business rules, while repositories own PostgreSQL or Redis access. Features depend on another feature's exported service rather than accessing its repository directly.
 
-## Configuration
+## Available Commands
 
-All configuration is environment-driven and validated at startup.
-
-| Variable | Default / requirement |
+| Command | Description |
 | --- | --- |
-| `NODE_ENV` | `development`, `test`, or `production` (required) |
-| `PORT` | `3000` |
-| `DATABASE_URL` | required PostgreSQL connection URL |
-| `REDIS_URL` | required Redis connection URL |
-| `JWT_SECRET` | required, high-entropy HS256 signing secret |
-| `JWT_ISSUER` / `JWT_AUDIENCE` | required token claims |
-| `ACCESS_TOKEN_TTL_SECONDS` | `600` |
-| `REFRESH_TOKEN_TTL_DAYS` | `30` |
-| `REFRESH_TOKEN_HMAC_SECRET` | required, distinct high-entropy secret |
-| `CORS_ORIGINS` | required comma-separated allowlist of web origins |
-| `COOKIE_NAME` | `refresh_token` |
-| `LOG_LEVEL` | `info` in production, `debug` in development |
-| `ARGON2_MEMORY_COST` / `ARGON2_TIME_COST` / `ARGON2_PARALLELISM` | `65536` / `3` / `4` |
-| `RATE_LIMIT_REGISTER_MAX` / `RATE_LIMIT_REGISTER_TTL_SECONDS` | `5` / `3600` |
-| `RATE_LIMIT_LOGIN_MAX` / `RATE_LIMIT_LOGIN_TTL_SECONDS` | `10` / `900` |
-| `RATE_LIMIT_REFRESH_MAX` / `RATE_LIMIT_REFRESH_TTL_SECONDS` | `30` / `900` |
-| `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | required only by `pnpm seed:admin` |
-
-`JWT_SECRET` and `REFRESH_TOKEN_HMAC_SECRET` must be distinct, high-entropy
-values in every real environment. Production additionally requires `Secure`
-refresh cookies and disables the `/docs` Swagger UI. Unrelated
-container-injected environment variables are tolerated and ignored.
-
-## API surface
-
-```text
-POST   /auth/register
-POST   /auth/login
-POST   /auth/refresh
-POST   /auth/logout
-POST   /auth/logout-all
-PATCH  /auth/password
-
-GET    /users/me
-PATCH  /users/me
-GET    /users            (ADMIN)
-GET    /users/:id        (ADMIN)
-PATCH  /users/:id        (ADMIN)
-
-GET    /health/live
-GET    /health/ready
-```
-
-The full request/response contract — payloads, status codes, and error
-codes — is in [`docs/PRODUCT_SPEC.md`](./docs/PRODUCT_SPEC.md). While the app
-is running in a non-production environment, browse it live at `/docs`.
-
-## Available scripts
-
-| Task | Command |
-| --- | --- |
-| Run (no watch) | `pnpm start` |
-| Run in watch mode | `pnpm start:dev` |
-| Run in production mode (after `pnpm build`) | `pnpm start:prod` |
-| Build | `pnpm build` |
-| Lint (`--fix`) | `pnpm lint` |
-| Format | `pnpm format` |
-| Unit tests | `pnpm test` |
-| Run a single test file | `pnpm test -- <pattern>` |
-| Integration tests (Docker required) | `pnpm test:integration` |
-| E2E tests (Docker required) | `pnpm test:e2e` |
-| Test coverage | `pnpm test:cov` |
-| Generate the Prisma client | `pnpm prisma:generate` |
-| Create a new migration | `pnpm prisma:migrate` |
-| Apply committed migrations | `pnpm prisma:deploy` |
-| Seed or promote an admin user | `pnpm seed:admin` |
+| `pnpm start` | Run the application without watch mode. |
+| `pnpm start:dev` | Run the application in watch mode. |
+| `pnpm start:debug` | Run the application in debug and watch mode. |
+| `pnpm start:prod` | Run the compiled application. |
+| `pnpm build` | Build the application. |
+| `pnpm lint` | Lint TypeScript files and apply ESLint fixes. |
+| `pnpm format` | Format source and test TypeScript files with Prettier. |
+| `pnpm test` | Run unit tests. |
+| `pnpm test:watch` | Run unit tests in watch mode. |
+| `pnpm test:integration` | Run integration tests; Docker is required. |
+| `pnpm test:e2e` | Run end-to-end tests; Docker is required. |
+| `pnpm test:coverage` | Run all test projects with V8 coverage. |
+| `pnpm prisma:generate` | Generate the Prisma client. |
+| `pnpm prisma:migrate` | Create and apply a development migration. |
+| `pnpm prisma:deploy` | Apply committed migrations. |
+| `pnpm seed:admin` | Create or promote an administrator using seed environment variables. |
 
 ## Testing
 
-Three independent Vitest projects cover the codebase:
-
-- **Unit** (`src/**/*.spec.ts`) — isolated logic with mocks/fakes, no
-  external dependencies.
-- **Integration** (`test/integration/**/*.spec.ts`) — real PostgreSQL/Redis
-  via Testcontainers.
-- **E2E** (`test/e2e/**/*.spec.ts`) — the full application boot plus
-  Testcontainers, exercising authentication, refresh rotation and reuse,
-  concurrent refresh, logout/logout-all, password changes, RBAC, pagination,
-  search, sorting, standardized error responses, and request-ID propagation.
-
-Integration and E2E suites provision an isolated database schema and Redis
-namespace per run and clean up automatically — no manual setup beyond having
-Docker available.
+Unit tests are colocated with source files under `src/**/*.spec.ts`. Integration and end-to-end suites use Testcontainers, so Docker must be available.
 
 ```bash
-$ pnpm test              # unit
-$ pnpm test:integration  # integration
-$ pnpm test:e2e          # e2e
-$ pnpm test:cov          # everything, with coverage
+pnpm test
+pnpm test:integration
+pnpm test:e2e
+pnpm test:coverage
 ```
+
+## Architecture
+
+The application is a modular monolith built with Nest modules, controllers, services, and repositories. PostgreSQL stores users through Prisma. Redis stores refresh sessions and distributed rate-limit state.
+
+Access tokens are verified locally without a PostgreSQL or Redis lookup. Refresh credentials are opaque cookies whose server-side HMAC representation is rotated atomically in Redis. This keeps high-frequency authenticated requests stateless while preserving server-side session revocation.
+
+For the complete product contract and engineering rationale, see:
+
+- [`docs/PRD.md`](./docs/PRD.md)
+- [`docs/PRODUCT_SPEC.md`](./docs/PRODUCT_SPEC.md)
+- [`docs/EDD.md`](./docs/EDD.md)
+
+## API Documentation
+
+Interactive Swagger/OpenAPI documentation is available at `/docs` when the application runs outside production.
+
+The API exposes authentication endpoints under `/auth`, user endpoints under `/users`, and health endpoints at `/health/live` and `/health/ready`. Protected endpoints require a Bearer access token. The complete request, response, and error contract is documented in [`docs/PRODUCT_SPEC.md`](./docs/PRODUCT_SPEC.md).
 
 ## Deployment
 
-Build the production image from the multi-stage `Dockerfile`:
+Build the production image with:
 
 ```bash
-$ docker build -t starter-template-nestjs .
+docker build -t starter-template-nestjs .
 ```
 
-The image generates the Prisma client, compiles the application, and runs as
-a non-root user. **It never applies migrations at startup** — the compiled
-app assumes its schema already matches `prisma/migrations`.
+Apply committed migrations before deploying application replicas:
 
-Rollout order:
+```bash
+DATABASE_URL=<production-database-url> pnpm prisma:deploy
+```
 
-1. Run committed migrations against the target database:
-   ```bash
-   $ DATABASE_URL=<production-database-url> pnpm prisma:deploy
-   ```
-2. Only after migrations succeed, roll out new replicas of the image.
+The Docker image generates the Prisma client, builds the application, and runs as a non-root user. It does not run migrations at startup.
 
-This keeps rollout safe under multiple replicas: every replica runs the same
-already-migrated schema, and no replica races another to apply migrations at
-boot. Choosing a cloud provider, container runtime, and secret manager for
-`DATABASE_URL`, `REDIS_URL`, `JWT_SECRET`, and `REFRESH_TOKEN_HMAC_SECRET` is
-intentionally out of scope here — plug this image and migration step into
-whatever platform you deploy to.
+Pull requests run installation, Prisma client generation, linting, unit tests, integration tests, end-to-end tests, application build, and Docker image build through `.github/workflows/pull-request.yml`.
 
-Pull requests run `.github/workflows/pull-request.yml`: install from the
-lockfile, generate the Prisma client, lint, run the unit/integration/E2E
-suites, build the application, and build the Docker image.
+## Contributing
 
-## Documentation
+1. Create a focused branch for the change.
+2. Keep feature boundaries intact: use exported services instead of another feature's repository.
+3. Add or update tests for changed behavior.
+4. Run `pnpm lint`, the relevant test suite, and `pnpm build` before opening a pull request.
+5. Use Conventional Commit messages in the form `type(scope): description`.
 
-| Document | Purpose |
+Before changing authentication, sessions, errors, or logging, review [`docs/PRODUCT_SPEC.md`](./docs/PRODUCT_SPEC.md). Update [`docs/EDD.md`](./docs/EDD.md) when an implementation decision changes; update the PRD or product specification when observable behavior changes.
+
+## Troubleshooting
+
+| Problem | Resolution |
 | --- | --- |
-| [`docs/PRD.md`](./docs/PRD.md) | Technology-agnostic product requirements |
-| [`docs/PRODUCT_SPEC.md`](./docs/PRODUCT_SPEC.md) | The behavioral/API contract and security invariants (S1–S16) |
-| [`docs/EDD.md`](./docs/EDD.md) | NestJS-specific engineering decisions that satisfy the spec |
-| [`CLAUDE.md`](./CLAUDE.md) / [`AGENTS.md`](./AGENTS.md) | Architecture map and conventions for AI coding agents |
+| Integration or end-to-end tests cannot start containers. | Start Docker and rerun the test command. |
+| The application fails during startup configuration validation. | Copy `.env.example` to `.env` for local development and provide every required variable. |
+| The readiness endpoint is unhealthy. | Confirm the local PostgreSQL and Redis services are running, then verify `DATABASE_URL` and `REDIS_URL`. |
 
 ## License
 
-UNLICENSED — see `package.json`. Adjust to fit your project before publishing.
+UNLICENSED. Update the license before publishing or distributing this project.
