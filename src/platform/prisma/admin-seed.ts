@@ -2,33 +2,49 @@ import { randomBytes, scrypt } from 'node:crypto';
 
 type AdminSeedClient = {
   user: {
-    upsert(input: {
-      create: { email: string; passwordHash: string; role: 'ADMIN' };
-      update: { passwordHash: string; role: 'ADMIN' };
+    create(input: {
+      data: { email: string; passwordHash: string; role: 'ADMIN' };
+    }): Promise<unknown>;
+    findUnique(input: {
+      where: { email: string };
+    }): Promise<{ role: 'USER' | 'ADMIN' } | null>;
+    update(input: {
+      data: { role: 'ADMIN' };
       where: { email: string };
     }): Promise<unknown>;
   };
 };
 
-export async function hashSeedPassword(password: string): Promise<string> {
+export type ScryptParameters = {
+  maxmem: number;
+  N: number;
+  p: number;
+  r: number;
+};
+
+export const defaultScryptParameters: ScryptParameters = {
+  maxmem: 268435456,
+  N: 131072,
+  p: 1,
+  r: 8,
+};
+
+export async function hashSeedPassword(
+  password: string,
+  parameters: ScryptParameters = defaultScryptParameters,
+): Promise<string> {
   const salt = randomBytes(16);
   const derivedKey = await new Promise<Buffer>((resolve, reject) => {
-    scrypt(
-      password,
-      salt,
-      64,
-      { N: 131072, maxmem: 268435456, p: 1, r: 8 },
-      (error, key) => {
-        if (error !== null) {
-          reject(error);
-          return;
-        }
-        resolve(key);
-      },
-    );
+    scrypt(password, salt, 64, parameters, (error, key) => {
+      if (error !== null) {
+        reject(error);
+        return;
+      }
+      resolve(key);
+    });
   });
 
-  return `scrypt$131072$8$1$${salt.toString('base64')}$${derivedKey.toString('base64')}`;
+  return `scrypt$${parameters.N}$${parameters.r}$${parameters.p}$${salt.toString('base64')}$${derivedKey.toString('base64')}`;
 }
 
 export async function seedAdmin(
@@ -38,11 +54,24 @@ export async function seedAdmin(
   hashPassword: (value: string) => Promise<string> = hashSeedPassword,
 ): Promise<void> {
   const normalizedEmail = email.trim().toLowerCase();
-  const passwordHash = await hashPassword(password);
-
-  await client.user.upsert({
+  const user = await client.user.findUnique({
     where: { email: normalizedEmail },
-    update: { passwordHash, role: 'ADMIN' },
-    create: { email: normalizedEmail, passwordHash, role: 'ADMIN' },
+  });
+
+  if (user?.role === 'ADMIN') {
+    return;
+  }
+
+  if (user !== null) {
+    await client.user.update({
+      where: { email: normalizedEmail },
+      data: { role: 'ADMIN' },
+    });
+    return;
+  }
+
+  const passwordHash = await hashPassword(password);
+  await client.user.create({
+    data: { email: normalizedEmail, passwordHash, role: 'ADMIN' },
   });
 }

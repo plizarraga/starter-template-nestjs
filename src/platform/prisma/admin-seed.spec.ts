@@ -3,25 +3,53 @@ import { seedAdmin } from './admin-seed';
 
 describe('seedAdmin', () => {
   it('normalizes the configured email and creates an administrator', async () => {
-    const upsert = vi.fn().mockResolvedValue(undefined);
+    const create = vi.fn().mockResolvedValue(undefined);
     const hashPassword = vi.fn().mockResolvedValue('encoded-password');
 
     await seedAdmin(
-      { user: { upsert } },
+      {
+        user: {
+          create,
+          findUnique: vi.fn().mockResolvedValue(null),
+          update: vi.fn(),
+        },
+      },
       ' Admin@Example.COM ',
       'secure-password',
       hashPassword,
     );
 
     expect(hashPassword).toHaveBeenCalledWith('secure-password');
-    expect(upsert).toHaveBeenCalledWith({
-      where: { email: 'admin@example.com' },
-      update: { passwordHash: 'encoded-password', role: 'ADMIN' },
-      create: {
+    expect(create).toHaveBeenCalledWith({
+      data: {
         email: 'admin@example.com',
         passwordHash: 'encoded-password',
         role: 'ADMIN',
       },
+    });
+  });
+
+  it('promotes an existing user without resetting its password', async () => {
+    const update = vi.fn().mockResolvedValue(undefined);
+    const hashPassword = vi.fn();
+
+    await seedAdmin(
+      {
+        user: {
+          create: vi.fn(),
+          findUnique: vi.fn().mockResolvedValue({ role: 'USER' }),
+          update,
+        },
+      },
+      'admin@example.com',
+      'secure-password',
+      hashPassword,
+    );
+
+    expect(hashPassword).not.toHaveBeenCalled();
+    expect(update).toHaveBeenCalledWith({
+      where: { email: 'admin@example.com' },
+      data: { role: 'ADMIN' },
     });
   });
 });

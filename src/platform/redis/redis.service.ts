@@ -9,6 +9,9 @@ export class RedisService implements OnModuleDestroy {
 
   async check(): Promise<void> {
     try {
+      if (this.client.status === 'wait' || this.client.status === 'end') {
+        await this.client.connect();
+      }
       await this.client.ping();
     } catch {
       throw new PlatformError('SERVICE_UNAVAILABLE');

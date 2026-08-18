@@ -14,7 +14,10 @@ import { RedisService } from './redis.service';
       provide: REDIS_CLIENT,
       useFactory: (config: ConfigService<Environment, true>) => {
         const client = new Redis(config.getOrThrow('REDIS_URL'), {
+          connectTimeout: 1000,
+          enableOfflineQueue: false,
           lazyConnect: true,
+          retryStrategy: () => null,
         });
         client.on('error', () => undefined);
         return client;

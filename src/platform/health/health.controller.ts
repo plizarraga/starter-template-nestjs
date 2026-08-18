@@ -1,13 +1,9 @@
 import { Controller, Get } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { RedisService } from '../redis/redis.service';
+import { HealthService } from './health.service';
 
 @Controller('health')
 export class HealthController {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly redis: RedisService,
-  ) {}
+  constructor(private readonly health: HealthService) {}
 
   @Get('live')
   live(): { status: 'ok' } {
@@ -16,7 +12,7 @@ export class HealthController {
 
   @Get('ready')
   async ready(): Promise<{ status: 'ok' }> {
-    await Promise.all([this.prisma.check(), this.redis.check()]);
+    await this.health.checkReadiness();
     return { status: 'ok' };
   }
 }
