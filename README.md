@@ -107,6 +107,21 @@ curl http://localhost:3000/health/live
 curl http://localhost:3000/health/ready
 ```
 
+### Try the API in Swagger
+
+With the app running, open <http://localhost:3000/docs> (disabled in
+production).
+
+1. `POST /auth/register` with `{"email": "user@example.com", "password": "P@ssw0rd-1234"}` to create a user.
+2. `POST /auth/login` with the same credentials. The response body carries the `accessToken`.
+3. Click **Authorize** (top right), paste the token, and confirm. Endpoints marked with a padlock are now authenticated.
+4. `GET /users/me` returns your profile.
+
+The refresh token is an httpOnly cookie scoped to `/auth`, so
+`POST /auth/refresh` and `POST /auth/logout` also work from Swagger — but
+those endpoints validate the `Origin` header, so `CORS_ORIGINS` must include
+the API origin (`http://localhost:3000`) or they return `403`.
+
 ### Make it your own
 
 - Rename the `name` field in `package.json`.

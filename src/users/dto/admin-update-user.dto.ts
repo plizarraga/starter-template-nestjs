@@ -3,6 +3,10 @@ import { Transform } from 'class-transformer';
 import { IsEmail, IsEnum, IsOptional } from 'class-validator';
 
 export class AdminUpdateUserDto {
+  /**
+   * New email for the user.
+   * @example user@example.com
+   */
   @IsOptional()
   @IsEmail()
   @Transform(({ value }: { value: unknown }) =>
@@ -10,6 +14,10 @@ export class AdminUpdateUserDto {
   )
   email?: string;
 
+  /**
+   * New role for the user.
+   * @example USER
+   */
   @IsOptional()
   @IsEnum(Role)
   role?: Role;

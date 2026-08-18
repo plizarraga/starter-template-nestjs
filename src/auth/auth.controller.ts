@@ -10,8 +10,19 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import {
+  ApiBearerAuth,
+  ApiConflictResponse,
+  ApiCreatedResponse,
+  ApiNoContentResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
+import { UserResponseDto } from '../users/dto/user-response.dto';
 import { Environment } from '../platform/config/environment';
 import { PlatformError } from '../platform/errors/platform-error';
 import { OriginValidator } from '../platform/http/origin-validator.service';
@@ -20,9 +31,11 @@ import { RedisThrottlerGuard } from '../platform/rate-limit/redis-throttler.guar
 import { AccessTokenGuard } from './access-token.guard';
 import type { AuthenticatedRequest } from './access-token.guard';
 import { AuthService } from './auth.service';
+import { AccessTokenResponseDto } from './dto/access-token-response.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { CredentialsDto } from './dto/credentials.dto';
 
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -36,6 +49,15 @@ export class AuthController {
     [RATE_LIMIT_NAMES.LOGIN]: true,
     [RATE_LIMIT_NAMES.REFRESH]: true,
   })
+  @ApiOperation({ summary: 'Register a new user' })
+  @ApiCreatedResponse({
+    description: 'The created user (role USER).',
+    type: UserResponseDto,
+  })
+  @ApiConflictResponse({
+    description:
+      'A user with this email already exists (USER_EMAIL_ALREADY_EXISTS).',
+  })
   @Post('register')
   register(@Body() credentials: CredentialsDto) {
     return this.auth.register(credentials);
@@ -45,6 +67,15 @@ export class AuthController {
   @SkipThrottle({
     [RATE_LIMIT_NAMES.REFRESH]: true,
     [RATE_LIMIT_NAMES.REGISTER]: true,
+  })
+  @ApiOperation({ summary: 'Log in with email and password' })
+  @ApiOkResponse({
+    description:
+      'Access token payload. The refresh token is set as an httpOnly cookie scoped to /auth.',
+    type: AccessTokenResponseDto,
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Invalid credentials (INVALID_CREDENTIALS).',
   })
   @HttpCode(HttpStatus.OK)
   @Post('login')
@@ -61,6 +92,17 @@ export class AuthController {
   @SkipThrottle({
     [RATE_LIMIT_NAMES.LOGIN]: true,
     [RATE_LIMIT_NAMES.REGISTER]: true,
+  })
+  @ApiOperation({ summary: 'Rotate the refresh session' })
+  @ApiOkResponse({
+    description:
+      'New access token payload; the refresh cookie is rotated. ' +
+      'Requires the refresh cookie set by login.',
+    type: AccessTokenResponseDto,
+  })
+  @ApiUnauthorizedResponse({
+    description:
+      'Missing or invalid refresh cookie (INVALID_REFRESH_TOKEN), or Origin not allowed.',
   })
   @HttpCode(HttpStatus.OK)
   @Post('refresh')
@@ -79,6 +121,14 @@ export class AuthController {
     return access;
   }
 
+  @ApiOperation({ summary: 'Revoke the current refresh session' })
+  @ApiNoContentResponse({
+    description:
+      'Refresh session revoked and cookie cleared. Requires the refresh cookie set by login.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Missing or invalid refresh cookie (INVALID_REFRESH_TOKEN).',
+  })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('logout')
   async logout(
@@ -93,6 +143,10 @@ export class AuthController {
     );
   }
 
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Revoke all refresh sessions for the current user' })
+  @ApiNoContentResponse({ description: 'All refresh sessions revoked.' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid access token.' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('logout-all')
   @UseGuards(AccessTokenGuard)
@@ -103,6 +157,12 @@ export class AuthController {
     await this.auth.logoutAll(request.principal.id);
   }
 
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Change the current user password' })
+  @ApiNoContentResponse({
+    description: 'Password updated and all refresh sessions revoked.',
+  })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid access token.' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Patch('password')
   @UseGuards(AccessTokenGuard)
