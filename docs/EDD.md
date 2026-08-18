@@ -89,7 +89,8 @@ The implementation adds these production dependencies:
   the `Cookie` header rather than through a cookie-parsing middleware.
 
 Development dependencies include `vitest`, `@vitest/coverage-v8`,
-`testcontainers`, and `supertest`.
+`testcontainers`, `supertest`, and `dotenv` (loaded by `prisma.config.ts` so
+the Prisma CLI reads `.env`).
 
 ## 5. PostgreSQL and Prisma
 
@@ -122,6 +123,12 @@ hash is needed for login or sensitive profile changes.
 - CI and production apply committed migrations with `prisma migrate deploy`.
 - The API process never runs migrations at startup; rollout automation runs
   them before starting new application replicas.
+- `prisma.config.ts` is the Prisma CLI configuration. It points the CLI at
+  `prisma/schema.prisma` and declares the seed command
+  (`ts-node prisma/seed-admin.ts`, run with `prisma db seed`). Because the
+  Prisma CLI stops auto-loading `.env` when a config file is present, the file
+  loads it explicitly with `import 'dotenv/config'`; `dotenv` is a
+  development-only dependency.
 - `pnpm seed:admin` is an idempotent command. It reads
   `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD`, normalizes and hashes the
   password, and creates or promotes that user to `ADMIN`.
@@ -363,6 +370,30 @@ ensures all application replicas apply the same counters.
 /health/ready` checks PostgreSQL and Redis and returns only a generic unhealthy
 response if either required dependency is unavailable. It does not reveal
 connection strings or implementation diagnostics.
+
+### 9.5 Swagger / OpenAPI
+
+Swagger is built with `@nestjs/swagger`'s `DocumentBuilder` and served at
+`/docs` outside production only. It documents two tags, `auth` and `users`,
+and registers a Bearer JWT scheme named `access-token` via `addBearerAuth`, so
+the UI's Authorize button can attach the access token to protected routes.
+
+The Nest CLI Swagger plugin (`@nestjs/swagger` under `compilerOptions.plugins`
+in `nest-cli.json`, with `classValidatorShim` and `introspectComments`) derives
+OpenAPI metadata from DTOs and decorators, so request and response DTOs surface
+`@ApiProperty` descriptions, examples, enums, and constraints without a
+hand-written schema per type. Controllers annotate routes with `@ApiTags`,
+`@ApiBearerAuth('access-token')`, `@ApiOperation`, and response decorators
+(`@ApiOkResponse`, `@ApiCreatedResponse`, and error responses with the real
+status codes from the error registry). Response DTOs
+(`AccessTokenResponseDto`, `UserResponseDto`, `PaginatedUsersResponseDto`)
+document the success shapes, and JSDoc `@example` values feed the request-body
+examples in the UI.
+
+Login and registration do not validate `Origin`, but refresh and logout do.
+Testing those two routes from Swagger UI therefore requires the Swagger origin
+to be present in `CORS_ORIGINS` (for example `http://localhost:3000` when
+running locally).
 
 ## 10. Configuration
 
