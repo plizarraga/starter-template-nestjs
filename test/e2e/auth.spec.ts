@@ -1,6 +1,7 @@
 import { Controller, Get, Req, UseGuards } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { PrismaClient, Role } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient, Role } from '../../src/generated/prisma/client';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -32,10 +33,11 @@ describe('authentication (e2e)', () => {
   beforeAll(async () => {
     originalEnvironment = { ...process.env };
     environment = await createTestEnvironment();
-    const databaseUrl = new URL(environment.databaseUrl);
-    databaseUrl.searchParams.set('schema', environment.schema);
     const prisma = new PrismaClient({
-      datasources: { db: { url: databaseUrl.toString() } },
+      adapter: new PrismaPg(
+        { connectionString: environment.databaseUrl },
+        { schema: environment.schema },
+      ),
     });
     await prisma.$executeRawUnsafe(
       `CREATE TYPE "${environment.schema}"."Role" AS ENUM ('USER', 'ADMIN')`,
@@ -57,7 +59,8 @@ describe('authentication (e2e)', () => {
     process.env = {
       ...originalEnvironment,
       ...defaultEnvironment,
-      DATABASE_URL: databaseUrl.toString(),
+      DATABASE_SCHEMA: environment.schema,
+      DATABASE_URL: environment.databaseUrl,
       REDIS_URL: environment.redisUrl,
     };
     const { AppModule } =
@@ -176,11 +179,11 @@ describe('authentication (e2e)', () => {
       .expect(200);
     const accessToken = (login.body as { accessToken: string }).accessToken;
 
-    const databaseUrl = new URL(environment.databaseUrl);
-    databaseUrl.searchParams.set('schema', environment.schema);
-    const prisma = new PrismaClient({
-      datasources: { db: { url: databaseUrl.toString() } },
-    });
+    const adapter = new PrismaPg(
+      { connectionString: environment.databaseUrl },
+      { schema: environment.schema },
+    );
+    const prisma = new PrismaClient({ adapter });
     await prisma.user.delete({
       where: { email: 'stateless-user@example.com' },
     });

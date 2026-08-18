@@ -1,4 +1,4 @@
-import { Role } from '@prisma/client';
+import { Role } from '../../generated/prisma/client';
 import { Transform } from 'class-transformer';
 import { IsEmail, IsEnum, IsOptional } from 'class-validator';
 

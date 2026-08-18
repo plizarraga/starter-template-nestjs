@@ -1,4 +1,4 @@
-import { Role } from '@prisma/client';
+import { Role } from '../generated/prisma/client';
 import { describe, expect, it, vi } from 'vitest';
 import { UsersController } from './users.controller';
 

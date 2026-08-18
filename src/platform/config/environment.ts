@@ -7,6 +7,7 @@ export type Environment = {
   ARGON2_TIME_COST: number;
   COOKIE_NAME: string;
   CORS_ORIGINS: string;
+  DATABASE_SCHEMA: string;
   DATABASE_URL: string;
   JWT_AUDIENCE: string;
   JWT_ISSUER: string;
@@ -38,6 +39,7 @@ const environmentSchema = Joi.object<Environment>({
   ARGON2_TIME_COST: Joi.number().integer().positive().default(3),
   COOKIE_NAME: Joi.string().trim().default('refresh_token'),
   CORS_ORIGINS: Joi.string().trim().required(),
+  DATABASE_SCHEMA: Joi.string().trim().default('public'),
   DATABASE_URL: Joi.string()
     .uri({ scheme: ['postgres', 'postgresql'] })
     .required(),

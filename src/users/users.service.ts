@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Role, User } from '@prisma/client';
+import { Role, User } from '../generated/prisma/client';
 import { PlatformError } from '../platform/errors/platform-error';
 import {
   AdminUserPatch,

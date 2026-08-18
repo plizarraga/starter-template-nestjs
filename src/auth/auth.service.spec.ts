@@ -1,4 +1,4 @@
-import { Role } from '@prisma/client';
+import { Role } from '../generated/prisma/client';
 import { describe, expect, it, vi } from 'vitest';
 import { PlatformError } from '../platform/errors/platform-error';
 import { AuthService } from './auth.service';

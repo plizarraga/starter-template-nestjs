@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma, Role, User } from '@prisma/client';
+import { Prisma, Role, User } from '../generated/prisma/client';
 import { PlatformError } from '../platform/errors/platform-error';
 import { PrismaService } from '../platform/prisma/prisma.service';
 import { SortField, SortOrder } from './dto/list-users-query.dto';

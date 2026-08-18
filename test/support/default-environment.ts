@@ -2,6 +2,7 @@ export const defaultEnvironment: NodeJS.ProcessEnv = {
   ACCESS_TOKEN_TTL_SECONDS: '600',
   COOKIE_NAME: 'refresh_token',
   CORS_ORIGINS: 'http://localhost:3001',
+  DATABASE_SCHEMA: 'public',
   DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/starter',
   JWT_AUDIENCE: 'starter-client',
   JWT_ISSUER: 'starter-api',

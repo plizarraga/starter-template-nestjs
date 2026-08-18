@@ -78,8 +78,8 @@ The implementation adds these production dependencies:
 
 - `@nestjs/config` and `joi` for validated environment configuration.
 - `@nestjs/jwt` for HS256 access-token signing and verification.
-- `@prisma/client` and `prisma` for PostgreSQL access, schema generation, and
-  migrations.
+- `@prisma/client`, `prisma`, and `@prisma/adapter-pg` for PostgreSQL access,
+  schema generation, migrations, and the pg driver adapter.
 - `ioredis` for Redis commands, Lua scripts, and health checks.
 - `class-validator` and `class-transformer` for request DTOs.
 - `nestjs-pino` and `pino` for structured logging and redaction.
@@ -98,6 +98,12 @@ the Prisma CLI reads `.env`).
 
 Prisma owns the PostgreSQL schema and generated client. Users are durable data;
 refresh sessions are not stored in PostgreSQL.
+
+Prisma ORM v7 replaces the Rust query engine with a driver adapter: the
+generated client is emitted to `src/generated/prisma` (provider
+`prisma-client`, `moduleFormat = "cjs"`) and every `PrismaClient` is
+instantiated with a `PrismaPg` adapter. The adapter's `schema` option selects
+the PostgreSQL schema (default `public` via `DATABASE_SCHEMA`).
 
 ```text
 User
@@ -412,6 +418,7 @@ unknown external variables.
 | `NODE_ENV` | `development`, `test`, or `production`; required enum |
 | `PORT` | `3000` |
 | `DATABASE_URL` | required PostgreSQL URL |
+| `DATABASE_SCHEMA` | PostgreSQL schema for generated queries, `public` |
 | `REDIS_URL` | required Redis URL |
 | `JWT_SECRET` | required high-entropy HS256 secret |
 | `JWT_ISSUER` / `JWT_AUDIENCE` | required token claims |

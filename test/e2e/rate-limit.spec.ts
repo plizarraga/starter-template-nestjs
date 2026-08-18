@@ -1,5 +1,6 @@
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '../../src/generated/prisma/client';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -18,10 +19,11 @@ describe('Redis-backed rate limits (e2e)', () => {
   beforeAll(async () => {
     originalEnvironment = { ...process.env };
     environment = await createTestEnvironment();
-    const databaseUrl = new URL(environment.databaseUrl);
-    databaseUrl.searchParams.set('schema', environment.schema);
     const prisma = new PrismaClient({
-      datasources: { db: { url: databaseUrl.toString() } },
+      adapter: new PrismaPg(
+        { connectionString: environment.databaseUrl },
+        { schema: environment.schema },
+      ),
     });
     await prisma.$executeRawUnsafe(
       `CREATE TYPE "${environment.schema}"."Role" AS ENUM ('USER', 'ADMIN')`,
@@ -43,7 +45,8 @@ describe('Redis-backed rate limits (e2e)', () => {
     process.env = {
       ...originalEnvironment,
       ...defaultEnvironment,
-      DATABASE_URL: databaseUrl.toString(),
+      DATABASE_SCHEMA: environment.schema,
+      DATABASE_URL: environment.databaseUrl,
       RATE_LIMIT_LOGIN_MAX: '2',
       RATE_LIMIT_LOGIN_TTL_SECONDS: '900',
       RATE_LIMIT_REFRESH_MAX: '2',

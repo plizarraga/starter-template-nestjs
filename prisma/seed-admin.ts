@@ -1,4 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import 'dotenv/config';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '../src/generated/prisma/client';
 import {
   defaultArgon2Parameters,
   hashSeedPassword,
@@ -31,7 +33,10 @@ async function main(): Promise<void> {
     throw new Error('SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD are required');
   }
 
-  const prisma = new PrismaClient();
+  const adapter = new PrismaPg({
+    connectionString: process.env.DATABASE_URL ?? '',
+  });
+  const prisma = new PrismaClient({ adapter });
   try {
     const parameters = {
       memoryCost: readPositiveInteger(

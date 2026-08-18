@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { Role } from '@prisma/client';
+import { Role } from '../generated/prisma/client';
 import { Environment } from '../platform/config/environment';
 import { PlatformError } from '../platform/errors/platform-error';
 
