@@ -86,16 +86,34 @@ $ pnpm run test:cov
 
 ## Deployment
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+Build the production image from the multi-stage `Dockerfile`:
 
 ```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+$ docker build -t starter-template-nestjs .
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+The image generates the Prisma client, compiles the application, and runs as
+a non-root user. **It never applies migrations at startup** — the compiled
+app assumes its schema already matches `prisma/migrations`.
+
+Rollout order:
+
+1. Run committed migrations against the target database:
+   ```bash
+   $ DATABASE_URL=<production-database-url> pnpm prisma:deploy
+   ```
+2. Only after migrations succeed, roll out new replicas of the image.
+
+This keeps rollout safe under multiple replicas: every replica runs the same
+already-migrated schema, and no replica races another to apply migrations at
+boot. Choosing a cloud provider, container runtime, and secret manager for
+`DATABASE_URL`, `REDIS_URL`, `JWT_SECRET`, and `REFRESH_TOKEN_HMAC_SECRET` is
+intentionally out of scope here — plug this image and migration step into
+whatever platform you deploy to.
+
+Pull requests run `.github/workflows/pull-request.yml`: install from the
+lockfile, generate the Prisma client, lint, run the unit/integration/E2E
+suites, build the application, and build the Docker image.
 
 ## Resources
 

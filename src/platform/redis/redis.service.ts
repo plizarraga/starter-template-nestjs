@@ -201,11 +201,7 @@ export class RedisService implements OnModuleDestroy {
       await this.connectIfNeeded();
       const [totalHits, timeToExpireMs, blocked] = await (
         this.client as Redis & RateLimitCommands
-      ).incrementRateLimit(
-        `rate-limit:${counterKey}`,
-        ttlMilliseconds,
-        limit,
-      );
+      ).incrementRateLimit(`rate-limit:${counterKey}`, ttlMilliseconds, limit);
       const timeToExpire = Math.ceil(timeToExpireMs / 1000);
       return {
         isBlocked: blocked === 1,
