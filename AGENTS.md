@@ -24,6 +24,10 @@ decisions change.
 
 pnpm only (`pnpm-lock.yaml`, `pnpm-workspace.yaml`). Do not use npm/yarn.
 
+## Commit messages
+
+Use Conventional Commits: `type(scope): description`.
+
 ## ⚠️ Build-script approval gate (blocks everything)
 
 `pnpm-workspace.yaml` ships with a placeholder that makes **every** `pnpm`
