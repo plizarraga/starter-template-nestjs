@@ -10,6 +10,14 @@ export const errorDefinitions = {
     message: 'Access token has expired',
     statusCode: HttpStatus.UNAUTHORIZED,
   },
+  CANNOT_REMOVE_LAST_ADMIN: {
+    message: 'This operation would leave zero administrators',
+    statusCode: HttpStatus.CONFLICT,
+  },
+  CANNOT_REMOVE_OWN_ADMIN_ROLE: {
+    message: 'Administrators cannot remove their own ADMIN role',
+    statusCode: HttpStatus.CONFLICT,
+  },
   FORBIDDEN: {
     message: 'Forbidden resource',
     statusCode: HttpStatus.FORBIDDEN,

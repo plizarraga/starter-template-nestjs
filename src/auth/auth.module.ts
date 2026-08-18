@@ -8,11 +8,12 @@ import { AccessTokenService } from './access-token.service';
 import { AuthController } from './auth.controller';
 import { AuthSessionRepository } from './auth-session.repository';
 import { AuthService } from './auth.service';
+import { RolesGuard } from './guards/roles.guard';
 import { PasswordService } from './password.service';
 
 @Module({
   controllers: [AuthController],
-  exports: [AccessTokenGuard, AccessTokenService, AuthService],
+  exports: [AccessTokenGuard, AccessTokenService, AuthService, RolesGuard],
   imports: [
     forwardRef(() => UsersModule),
     JwtModule.registerAsync({
@@ -39,6 +40,7 @@ import { PasswordService } from './password.service';
     AuthService,
     AuthSessionRepository,
     PasswordService,
+    RolesGuard,
   ],
 })
 export class AuthModule {}
