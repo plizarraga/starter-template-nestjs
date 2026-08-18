@@ -4,8 +4,8 @@
 
 **Blocked by:** 03 — Add persistence, health, and admin seed.
 
-**Status:** ready-for-agent
+**Status:** completed
 
-- [ ] Registration validates and normalizes email, hashes passwords asynchronously with the configured scrypt policy, always assigns USER, and rejects duplicate email safely.
-- [ ] Login returns indistinguishable failures for unknown users and invalid passwords, creates an independent Redis-backed session, and emits safe security events.
-- [ ] Issued HS256 access tokens enforce issuer, audience, expiration, and produce principals limited to identity and role without PostgreSQL or Redis queries.
+- [x] Registration validates and normalizes email, hashes passwords asynchronously with the configured scrypt policy, always assigns USER, and rejects duplicate email safely.
+- [x] Login returns indistinguishable failures for unknown users and invalid passwords, creates an independent Redis-backed session, and emits safe security events.
+- [x] Issued HS256 access tokens enforce issuer, audience, expiration, and produce principals limited to identity and role without PostgreSQL or Redis queries.
