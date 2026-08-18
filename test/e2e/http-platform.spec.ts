@@ -105,7 +105,7 @@ describe('HTTP platform (e2e)', () => {
     await app.init();
 
     const response = await request(app.getHttpServer())
-      .get('/')
+      .get('/health/live')
       .set('Origin', origin)
       .expect(200);
 
