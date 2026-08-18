@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
@@ -26,6 +26,16 @@ class ValidationProbeController {
   @Post()
   create(@Body() body: ValidationProbeDto): ValidationProbeDto {
     return body;
+  }
+}
+
+@Controller('failure-probe')
+class FailureProbeController {
+  @Get()
+  fail(): never {
+    throw new Error(
+      'connect ECONNREFUSED 127.0.0.1:5432 - password authentication failed for user "postgres"',
+    );
   }
 }
 
@@ -123,6 +133,38 @@ describe('HTTP platform (e2e)', () => {
       path: '/validation-probe',
       statusCode: 400,
     });
+  });
+
+  it('When an unhandled exception occurs, then the response hides infrastructure internals behind the generic error contract', async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      controllers: [FailureProbeController],
+      imports: [AppModule],
+    }).compile();
+    app = moduleFixture.createNestApplication();
+    configureApplication(app);
+    await app.init();
+
+    const response = await request(app.getHttpServer())
+      .get('/failure-probe')
+      .expect(500);
+    const error = response.body as StandardError & {
+      message: string;
+      timestamp: string;
+    };
+
+    expect(error).toMatchObject({
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'An unexpected error occurred',
+      path: '/failure-probe',
+      statusCode: 500,
+    });
+    expect(error.requestId).toEqual(expect.any(String));
+    expect(error.timestamp).toEqual(expect.any(String));
+
+    const raw = JSON.stringify(error);
+    expect(raw).not.toContain('ECONNREFUSED');
+    expect(raw).not.toContain('5432');
+    expect(raw).not.toContain('postgres');
   });
 
   it('When the application is not in production, then its OpenAPI documentation is available', async () => {

@@ -115,6 +115,77 @@ describe('authentication (e2e)', () => {
     expect(protectedResponse.body).toMatchObject({ role: Role.USER });
   });
 
+  it('When registration includes a role field, then it is rejected instead of being honored', async () => {
+    await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({
+        email: 'privilege-attempt@example.com',
+        password: 'password-123',
+        role: 'ADMIN',
+      })
+      .expect(400)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({ code: 'VALIDATION_ERROR' });
+      });
+
+    await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({
+        email: 'privilege-attempt@example.com',
+        password: 'password-123',
+      })
+      .expect(401);
+  });
+
+  it('When a refresh session has been revoked, then the still-valid access token continues to authenticate normal requests', async () => {
+    await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({ email: 'stateless-session@example.com', password: 'password-123' })
+      .expect(201);
+    const login = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: 'stateless-session@example.com', password: 'password-123' })
+      .expect(200);
+    const accessToken = (login.body as { accessToken: string }).accessToken;
+
+    await request(app.getHttpServer())
+      .post('/auth/logout-all')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(204);
+
+    await request(app.getHttpServer())
+      .get('/auth-probe')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+  });
+
+  it('When the underlying user record no longer exists, then the still-valid access token continues to authenticate normal requests', async () => {
+    await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({ email: 'stateless-user@example.com', password: 'password-123' })
+      .expect(201);
+    const login = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: 'stateless-user@example.com', password: 'password-123' })
+      .expect(200);
+    const accessToken = (login.body as { accessToken: string }).accessToken;
+
+    const databaseUrl = new URL(environment.databaseUrl);
+    databaseUrl.searchParams.set('schema', environment.schema);
+    const prisma = new PrismaClient({
+      datasources: { db: { url: databaseUrl.toString() } },
+    });
+    await prisma.user.delete({
+      where: { email: 'stateless-user@example.com' },
+    });
+    await prisma.$disconnect();
+
+    await request(app.getHttpServer())
+      .get('/auth-probe')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+  });
+
   it('When credentials are invalid, then login returns the stable invalid-credentials error', async () => {
     await request(app.getHttpServer())
       .post('/auth/login')

@@ -309,6 +309,35 @@ describe('AuthService', () => {
     ).rejects.toMatchObject({ code: 'INVALID_CREDENTIALS' });
   });
 
+  it('When the session store fails, then login fails closed instead of returning tokens', async () => {
+    const users = {
+      findByEmailWithPassword: vi.fn().mockResolvedValue({
+        id: 'user-1',
+        passwordHash: 'password-hash',
+      }),
+    };
+    const password = { verify: vi.fn().mockResolvedValue(true) };
+    const accessTokens = { issue: vi.fn() };
+    const sessions = {
+      create: vi
+        .fn()
+        .mockRejectedValue(new PlatformError('SERVICE_UNAVAILABLE')),
+    };
+    const service = new AuthService(
+      users as never,
+      password as never,
+      accessTokens as never,
+      sessions as never,
+      { info: vi.fn(), warn: vi.fn() } as never,
+    );
+
+    await expect(
+      service.login({ email: 'reader@example.com', password: 'password-123' }),
+    ).rejects.toMatchObject({ code: 'SERVICE_UNAVAILABLE' });
+
+    expect(accessTokens.issue).not.toHaveBeenCalled();
+  });
+
   it('When a user does not exist, then login consumes password-verification cost before failing', async () => {
     const password = {
       consumeVerificationCost: vi.fn().mockResolvedValue(undefined),

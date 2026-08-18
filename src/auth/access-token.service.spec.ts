@@ -41,4 +41,27 @@ describe('AccessTokenService', () => {
       new PlatformError('INVALID_ACCESS_TOKEN'),
     );
   });
+
+  it('When an access token has expired, then it is rejected as expired rather than merely invalid', async () => {
+    const jwt = new JwtService({
+      secret,
+      signOptions: { audience: 'starter-client', issuer: 'starter-api' },
+      verifyOptions: {
+        algorithms: ['HS256'],
+        audience: 'starter-client',
+        issuer: 'starter-api',
+      },
+    });
+    const accessTokens = new AccessTokenService(jwt, {
+      getOrThrow: () => 600,
+    } as never);
+    const expiredToken = await jwt.signAsync(
+      { role: Role.USER, sub: 'user-1' },
+      { expiresIn: -60 },
+    );
+
+    await expect(accessTokens.verify(expiredToken)).rejects.toEqual(
+      new PlatformError('ACCESS_TOKEN_EXPIRED'),
+    );
+  });
 });
