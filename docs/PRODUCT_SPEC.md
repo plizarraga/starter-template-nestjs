@@ -1415,9 +1415,8 @@ A concrete Backend Starter implementation is product-complete when:
 - [x] Product behavior is documented independently from implementation technology.
 
 The NestJS reference implementation satisfies every item above; its
-engineering decisions are recorded in `EDD.md`, and the S1–S16 invariant
-evidence is recorded per-test in that implementation's own tracking
-(`.scratch/backend-starter-implementation/issues/10-verify-security-invariants.md`).
+engineering decisions are recorded in `EDD.md`, which maps the S1–S16
+invariant evidence per-test in its §13.
 
 ---
 
@@ -1442,17 +1441,19 @@ Each concrete starter must therefore have its own EDD.
 For example:
 
 ```text
-                   PRD.md
-                      │
-                      ▼
-              PRODUCT_SPEC.md
-                      │
-       ┌──────────────┼───────────────┐
-       ▼              ▼               ▼
- NestJS EDD      FastAPI EDD       Rails EDD
-       │              │               │
-       ▼              ▼               ▼
- NestJS Starter  FastAPI Starter  Rails Starter
+                    PRD.md
+                       │
+                       ▼
+               PRODUCT_SPEC.md
+                       │
+   ┌──────────┬────────┼────────┬──────────┐
+   ▼          ▼        ▼        ▼          ▼
+ NestJS     Fastify    Hono     FastAPI    Rails
+  EDD         EDD      EDD       EDD       EDD
+   │          │        │         │         │
+   ▼          ▼        ▼         ▼         ▼
+ NestJS     Fastify    Hono     FastAPI    Rails
+Starter     Starter   Starter   Starter   Starter
 ```
 
 The EDD is responsible for choosing:

@@ -101,10 +101,10 @@ sensitive fields must be added there, not redacted ad hoc at call sites.
 
 ### Security invariants drive the test suite
 
-`docs/PRODUCT_SPEC.md` §51 (S1–S16) maps each invariant to the test(s) that
-prove it. When touching auth, sessions, errors, or logging, check whether an
-existing invariant test already constrains the change before writing a new
-one.
+`docs/PRODUCT_SPEC.md` §51 (S1–S16) defines the mandatory invariants;
+`docs/EDD.md` §13 maps each one to the tests that prove it. When touching auth,
+sessions, errors, or logging, check whether an existing invariant test already
+constrains the change before writing a new one.
 
 ## Testing layout
 
