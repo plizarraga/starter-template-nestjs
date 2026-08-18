@@ -19,4 +19,8 @@ export class UsersService {
   findByEmailWithPassword(email: string): Promise<User | null> {
     return this.users.findByEmailWithPassword(email);
   }
+
+  findById(id: string): Promise<Pick<User, 'id' | 'role'> | null> {
+    return this.users.findById(id);
+  }
 }

@@ -32,6 +32,13 @@ export class UsersRepository {
     return this.prisma.user.findUnique({ where: { email } });
   }
 
+  findById(id: string): Promise<Pick<User, 'id' | 'role'> | null> {
+    return this.prisma.user.findUnique({
+      select: { id: true, role: true },
+      where: { id },
+    });
+  }
+
   private toPublicUser(user: User): PublicUser {
     return {
       createdAt: user.createdAt,

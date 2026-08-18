@@ -128,4 +128,134 @@ describe('authentication (e2e)', () => {
         });
       });
   });
+
+  it('When a refresh cookie is used, then it rotates once and rejects reuse', async () => {
+    await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({ email: 'refresh@example.com', password: 'password-123' })
+      .expect(201);
+
+    const login = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: 'refresh@example.com', password: 'password-123' })
+      .expect(200);
+    const originalCookie = login.headers['set-cookie']?.[0];
+    expect(originalCookie).toContain('refresh_token=');
+    expect(originalCookie).toContain('HttpOnly');
+    expect(originalCookie).toContain('Path=/auth');
+
+    const refresh = await request(app.getHttpServer())
+      .post('/auth/refresh')
+      .set('Cookie', originalCookie ?? '')
+      .set('Origin', 'http://localhost:3001')
+      .expect(200);
+    const replacementCookie = refresh.headers['set-cookie']?.[0];
+    expect(refresh.body).toMatchObject({ expiresIn: 600, tokenType: 'Bearer' });
+    expect(replacementCookie).toContain('refresh_token=');
+    expect(replacementCookie).not.toEqual(originalCookie);
+
+    await request(app.getHttpServer())
+      .post('/auth/refresh')
+      .set('Cookie', originalCookie ?? '')
+      .set('Origin', 'http://localhost:3001')
+      .expect(401)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({ code: 'INVALID_REFRESH_TOKEN' });
+      });
+  });
+
+  it('When refresh is concurrent, then exactly one request succeeds', async () => {
+    await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({ email: 'concurrent@example.com', password: 'password-123' })
+      .expect(201);
+    const login = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: 'concurrent@example.com', password: 'password-123' })
+      .expect(200);
+    const cookie = login.headers['set-cookie']?.[0] ?? '';
+
+    const responses = await Promise.all([
+      request(app.getHttpServer())
+        .post('/auth/refresh')
+        .set('Cookie', cookie)
+        .set('Origin', 'http://localhost:3001'),
+      request(app.getHttpServer())
+        .post('/auth/refresh')
+        .set('Cookie', cookie)
+        .set('Origin', 'http://localhost:3001'),
+    ]);
+
+    expect(responses.map((response) => response.status).sort()).toEqual([
+      200, 401,
+    ]);
+  });
+
+  it('When a refresh request has an untrusted origin, then it is rejected before consuming the session', async () => {
+    await request(app.getHttpServer())
+      .post('/auth/refresh')
+      .set('Origin', 'https://untrusted.example.com')
+      .expect(403)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({ code: 'FORBIDDEN' });
+      });
+  });
+
+  it('When a user logs out, then the cookie is cleared and its session cannot refresh', async () => {
+    await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({ email: 'logout@example.com', password: 'password-123' })
+      .expect(201);
+    const login = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: 'logout@example.com', password: 'password-123' })
+      .expect(200);
+    const cookie = login.headers['set-cookie']?.[0] ?? '';
+
+    const logout = await request(app.getHttpServer())
+      .post('/auth/logout')
+      .set('Cookie', cookie)
+      .set('Origin', 'http://localhost:3001')
+      .expect(204);
+    expect(logout.headers['set-cookie']?.[0]).toContain('refresh_token=;');
+
+    await request(app.getHttpServer())
+      .post('/auth/refresh')
+      .set('Cookie', cookie)
+      .set('Origin', 'http://localhost:3001')
+      .expect(401);
+  });
+
+  it('When a user logs out all sessions, then every refresh session is revoked', async () => {
+    await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({ email: 'logout-all@example.com', password: 'password-123' })
+      .expect(201);
+    const firstLogin = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: 'logout-all@example.com', password: 'password-123' })
+      .expect(200);
+    const secondLogin = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: 'logout-all@example.com', password: 'password-123' })
+      .expect(200);
+    const accessToken = (firstLogin.body as { accessToken: string })
+      .accessToken;
+
+    await request(app.getHttpServer())
+      .post('/auth/logout-all')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(204);
+
+    for (const cookie of [
+      firstLogin.headers['set-cookie']?.[0] ?? '',
+      secondLogin.headers['set-cookie']?.[0] ?? '',
+    ]) {
+      await request(app.getHttpServer())
+        .post('/auth/refresh')
+        .set('Cookie', cookie)
+        .set('Origin', 'http://localhost:3001')
+        .expect(401);
+    }
+  });
 });

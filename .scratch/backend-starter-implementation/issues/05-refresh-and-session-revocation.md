@@ -4,9 +4,9 @@
 
 **Blocked by:** 04 — Enable registration, login, and access authentication.
 
-**Status:** ready-for-agent
+**Status:** completed
 
-- [ ] Refresh credentials are stored only as HMAC-protected secrets in expiring Redis sessions and are transported with secure cookie defaults.
-- [ ] Refresh rotation is atomic: one use succeeds, prior credentials cannot be reused, and concurrent consumption yields exactly one success.
-- [ ] Refresh and logout endpoints validate allowed origins, fail closed when Redis is unavailable, and logout clears the browser cookie while remaining idempotent where practical.
-- [ ] Logout-all requires a valid access credential and revokes all indexed sessions for its principal.
+- [x] Refresh credentials are stored only as HMAC-protected secrets in expiring Redis sessions and are transported with secure cookie defaults.
+- [x] Refresh rotation is atomic: one use succeeds, prior credentials cannot be reused, and concurrent consumption yields exactly one success.
+- [x] Refresh and logout endpoints validate allowed origins, fail closed when Redis is unavailable, and logout clears the browser cookie while remaining idempotent where practical.
+- [x] Logout-all requires a valid access credential and revokes all indexed sessions for its principal.

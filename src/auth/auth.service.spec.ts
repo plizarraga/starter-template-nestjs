@@ -55,7 +55,9 @@ describe('AuthService', () => {
       expiresIn: vi.fn().mockReturnValue(600),
       issue: vi.fn().mockResolvedValue('signed-access-token'),
     };
-    const sessions = { create: vi.fn().mockResolvedValue(undefined) };
+    const sessions = {
+      create: vi.fn().mockResolvedValue('session-1.secret-1'),
+    };
     const service = new AuthService(
       users as never,
       password as never,
@@ -77,8 +79,76 @@ describe('AuthService', () => {
     expect(result).toEqual({
       accessToken: 'signed-access-token',
       expiresIn: 600,
+      refreshToken: 'session-1.secret-1',
       tokenType: 'Bearer',
     });
+  });
+
+  it('When a refresh credential is valid, then it rotates the session and issues a replacement access credential', async () => {
+    const users = {
+      findById: vi.fn().mockResolvedValue({ id: 'user-1', role: Role.USER }),
+    };
+    const accessTokens = {
+      expiresIn: vi.fn().mockReturnValue(600),
+      issue: vi.fn().mockResolvedValue('replacement-access-token'),
+    };
+    const sessions = {
+      rotate: vi.fn().mockResolvedValue({
+        refreshToken: 'session-1.secret-2',
+        userId: 'user-1',
+      }),
+    };
+    const service = new AuthService(
+      users as never,
+      {} as never,
+      accessTokens as never,
+      sessions as never,
+      { info: vi.fn(), warn: vi.fn() } as never,
+    );
+
+    const result = await service.refresh('session-1.secret-1');
+
+    expect(sessions.rotate).toHaveBeenCalledWith('session-1.secret-1');
+    expect(accessTokens.issue).toHaveBeenCalledWith({
+      id: 'user-1',
+      role: Role.USER,
+    });
+    expect(result).toEqual({
+      accessToken: 'replacement-access-token',
+      expiresIn: 600,
+      refreshToken: 'session-1.secret-2',
+      tokenType: 'Bearer',
+    });
+  });
+
+  it('When logging out, then it revokes the presented refresh session', async () => {
+    const sessions = { revoke: vi.fn().mockResolvedValue(undefined) };
+    const service = new AuthService(
+      {} as never,
+      {} as never,
+      {} as never,
+      sessions as never,
+      { info: vi.fn(), warn: vi.fn() } as never,
+    );
+
+    await service.logout('session-1.secret-1');
+
+    expect(sessions.revoke).toHaveBeenCalledWith('session-1.secret-1');
+  });
+
+  it('When logging out of all sessions, then it revokes sessions for the authenticated principal', async () => {
+    const sessions = { revokeAll: vi.fn().mockResolvedValue(undefined) };
+    const service = new AuthService(
+      {} as never,
+      {} as never,
+      {} as never,
+      sessions as never,
+      { info: vi.fn(), warn: vi.fn() } as never,
+    );
+
+    await service.logoutAll('user-1');
+
+    expect(sessions.revokeAll).toHaveBeenCalledWith('user-1');
   });
 
   it('When a password is incorrect, then login returns the same invalid-credentials error', async () => {
