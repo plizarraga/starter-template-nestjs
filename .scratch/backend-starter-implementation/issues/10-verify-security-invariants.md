@@ -4,7 +4,7 @@
 
 **Blocked by:** 06 — Add self profile and password management; 07 — Enable administrative user management; 08 — Apply Redis-backed rate limits; 09 — Prepare reproducible production delivery.
 
-**Status:** ready-for-agent
+**Status:** completed
 
 - [x] Integration and E2E suites cover authentication, refresh rotation and reuse, concurrent refresh, logout, logout-all, password change, RBAC, pagination, search, and sorting.
 - [x] E2E assertions cover standardized 400, 401, 403, 404, 409, and practical 500 error responses, including request ID propagation.

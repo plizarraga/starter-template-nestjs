@@ -288,9 +288,8 @@ product domains — Authentication, Authorization, Users, and Platform
   documents conflict, `PRODUCT_SPEC.md` wins for behavior and `EDD.md` wins for
   implementation.
 - Implementation is tracked as one ticket per concern in
-  `.scratch/backend-starter-implementation/issues/`. Tickets 01–08 are
-  completed; 10 (invariant verification) is `ready-for-agent`; 09 (production
-  delivery) is open.
+  `.scratch/backend-starter-implementation/issues/`. Tickets 01–10 are all
+  completed.
 - Role changes do not revoke already-issued access tokens; the maximum stale
   authorization window is the access-token TTL. This is documented behavior,
   not a bug.
