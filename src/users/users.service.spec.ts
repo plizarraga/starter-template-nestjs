@@ -131,6 +131,38 @@ describe('UsersService', () => {
     expect(transaction.updateAdmin).not.toHaveBeenCalled();
   });
 
+  it('When an administrator demotes a non-administrator, then it persists without counting administrators', async () => {
+    const updated = {
+      createdAt: new Date(),
+      email: 'target@example.com',
+      id: 'user-2',
+      role: Role.USER,
+      updatedAt: new Date(),
+    };
+    const transaction = {
+      countAdmins: vi.fn(),
+      findRole: vi.fn().mockResolvedValue(Role.USER),
+      updateAdmin: vi.fn().mockResolvedValue(updated),
+    };
+    const users = {
+      transact: vi.fn((work: (users: typeof transaction) => Promise<unknown>) =>
+        work(transaction),
+      ),
+    };
+    const service = new UsersService(users as never);
+
+    const result = await service.updateAdmin('admin-1', 'user-2', {
+      role: Role.USER,
+    });
+
+    expect(transaction.findRole).toHaveBeenCalledWith('user-2');
+    expect(transaction.countAdmins).not.toHaveBeenCalled();
+    expect(transaction.updateAdmin).toHaveBeenCalledWith('user-2', {
+      role: Role.USER,
+    });
+    expect(result).toBe(updated);
+  });
+
   it('When an administrator tries to remove their own ADMIN role, then it rejects without touching the repository', async () => {
     const users = { transact: vi.fn() };
     const service = new UsersService(users as never);

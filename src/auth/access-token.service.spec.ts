@@ -1,6 +1,6 @@
 import { JwtService } from '@nestjs/jwt';
 import { Role } from '@prisma/client';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { PlatformError } from '../platform/errors/platform-error';
 import { AccessTokenService } from './access-token.service';
 
@@ -62,6 +62,83 @@ describe('AccessTokenService', () => {
 
     await expect(accessTokens.verify(expiredToken)).rejects.toEqual(
       new PlatformError('ACCESS_TOKEN_EXPIRED'),
+    );
+  });
+
+  it('When a token carries a non-string subject, then it is rejected as invalid', async () => {
+    const jwt = new JwtService({
+      secret,
+      signOptions: { audience: 'starter-client', issuer: 'starter-api' },
+      verifyOptions: {
+        algorithms: ['HS256'],
+        audience: 'starter-client',
+        issuer: 'starter-api',
+      },
+    });
+    const accessTokens = new AccessTokenService(jwt, {
+      getOrThrow: () => 600,
+    } as never);
+    const token = await jwt.signAsync({ role: Role.USER, sub: 123 } as never);
+
+    await expect(accessTokens.verify(token)).rejects.toEqual(
+      new PlatformError('INVALID_ACCESS_TOKEN'),
+    );
+  });
+
+  it('When a token carries an unknown role, then it is rejected as invalid', async () => {
+    const jwt = new JwtService({
+      secret,
+      signOptions: { audience: 'starter-client', issuer: 'starter-api' },
+      verifyOptions: {
+        algorithms: ['HS256'],
+        audience: 'starter-client',
+        issuer: 'starter-api',
+      },
+    });
+    const accessTokens = new AccessTokenService(jwt, {
+      getOrThrow: () => 600,
+    } as never);
+    const token = await jwt.signAsync({
+      role: 'MODERATOR',
+      sub: 'user-1',
+    } as never);
+
+    await expect(accessTokens.verify(token)).rejects.toEqual(
+      new PlatformError('INVALID_ACCESS_TOKEN'),
+    );
+  });
+
+  it('When verification fails with a platform error, then it rethrows it unchanged', async () => {
+    const jwt = {
+      verifyAsync: vi
+        .fn()
+        .mockRejectedValue(new PlatformError('SERVICE_UNAVAILABLE')),
+    };
+    const accessTokens = new AccessTokenService(
+      jwt as never,
+      {
+        getOrThrow: () => 600,
+      } as never,
+    );
+
+    await expect(accessTokens.verify('token')).rejects.toEqual(
+      new PlatformError('SERVICE_UNAVAILABLE'),
+    );
+  });
+
+  it('When verification fails with an unexpected error, then it rejects as invalid', async () => {
+    const jwt = {
+      verifyAsync: vi.fn().mockRejectedValue(new Error('unexpected failure')),
+    };
+    const accessTokens = new AccessTokenService(
+      jwt as never,
+      {
+        getOrThrow: () => 600,
+      } as never,
+    );
+
+    await expect(accessTokens.verify('token')).rejects.toEqual(
+      new PlatformError('INVALID_ACCESS_TOKEN'),
     );
   });
 });

@@ -1,5 +1,5 @@
 import pino from 'pino';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { pinoRedaction } from './platform-logger.module';
 
 describe('platform logger', () => {
@@ -19,5 +19,22 @@ describe('platform logger', () => {
 
     expect(entries[0]).not.toContain(credentials.password);
     expect(entries[0]).toContain('[Redacted]');
+  });
+
+  it('When LOG_LEVEL is unset, then the logger defaults to info', async () => {
+    const original = process.env.LOG_LEVEL;
+    delete process.env.LOG_LEVEL;
+    vi.resetModules();
+
+    try {
+      const { pinoRedaction: redaction } =
+        (await import('./platform-logger.module')) as {
+          pinoRedaction: { censor: string };
+        };
+      expect(redaction.censor).toBe('[Redacted]');
+    } finally {
+      process.env.LOG_LEVEL = original;
+      vi.resetModules();
+    }
   });
 });

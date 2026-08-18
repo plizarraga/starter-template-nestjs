@@ -357,4 +357,40 @@ describe('AuthService', () => {
       'password-123',
     );
   });
+
+  it('When a refresh session references a missing user, then it rejects', async () => {
+    const service = new AuthService(
+      { findById: vi.fn().mockResolvedValue(null) } as never,
+      {} as never,
+      {} as never,
+      {
+        rotate: vi.fn().mockResolvedValue({
+          refreshToken: 'session-1.secret-2',
+          userId: 'ghost-user',
+        }),
+      } as never,
+      { info: vi.fn(), warn: vi.fn() } as never,
+    );
+
+    await expect(service.refresh('session-1.secret-1')).rejects.toMatchObject({
+      code: 'INVALID_REFRESH_TOKEN',
+    });
+  });
+
+  it('When updating the profile of a missing user, then it rejects with USER_NOT_FOUND', async () => {
+    const service = new AuthService(
+      { findByIdWithPassword: vi.fn().mockResolvedValue(null) } as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      { info: vi.fn(), warn: vi.fn() } as never,
+    );
+
+    await expect(
+      service.updateProfile('ghost-user', {
+        currentPassword: 'password-123',
+        email: 'reader@example.com',
+      }),
+    ).rejects.toMatchObject({ code: 'USER_NOT_FOUND' });
+  });
 });

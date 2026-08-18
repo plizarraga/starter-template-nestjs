@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { seedAdmin } from './admin-seed';
+import { hashSeedPassword, seedAdmin } from './admin-seed';
 
 describe('seedAdmin', () => {
   it('normalizes the configured email and creates an administrator', async () => {
@@ -51,5 +51,34 @@ describe('seedAdmin', () => {
       where: { email: 'admin@example.com' },
       data: { role: 'ADMIN' },
     });
+  });
+
+  it('does nothing when the user is already an administrator', async () => {
+    const create = vi.fn();
+    const update = vi.fn();
+    const hashPassword = vi.fn();
+
+    await seedAdmin(
+      {
+        user: {
+          create,
+          findUnique: vi.fn().mockResolvedValue({ role: 'ADMIN' }),
+          update,
+        },
+      },
+      'admin@example.com',
+      'secure-password',
+      hashPassword,
+    );
+
+    expect(hashPassword).not.toHaveBeenCalled();
+    expect(update).not.toHaveBeenCalled();
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('hashes a seed password with the default argon2 parameters', async () => {
+    const hash = await hashSeedPassword('secure-password');
+
+    expect(hash).toMatch(/^\$argon2id\$/);
   });
 });
