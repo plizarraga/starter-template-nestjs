@@ -4,7 +4,7 @@ import { PlatformError } from '../errors/platform-error';
 
 @Injectable()
 export class RedisThrottlerGuard extends ThrottlerGuard {
-  protected async throwThrottlingException(): Promise<void> {
-    throw new PlatformError('RATE_LIMIT_EXCEEDED');
+  protected throwThrottlingException(): Promise<never> {
+    return Promise.reject(new PlatformError('RATE_LIMIT_EXCEEDED'));
   }
 }
