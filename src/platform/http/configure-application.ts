@@ -15,6 +15,7 @@ export function configureApplication(app: NestExpressApplication): void {
     .split(',')
     .map((origin) => origin.trim());
 
+  app.set('trust proxy', 1);
   app.use(requestIdMiddleware);
   app.use(helmet());
   app.enableCors({ credentials: true, origin: origins });

@@ -10,10 +10,13 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { SkipThrottle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { Environment } from '../platform/config/environment';
 import { PlatformError } from '../platform/errors/platform-error';
 import { OriginValidator } from '../platform/http/origin-validator.service';
+import { RATE_LIMIT_NAMES } from '../platform/rate-limit/rate-limit-names';
+import { RedisThrottlerGuard } from '../platform/rate-limit/redis-throttler.guard';
 import { AccessTokenGuard } from './access-token.guard';
 import type { AuthenticatedRequest } from './access-token.guard';
 import { AuthService } from './auth.service';
@@ -28,11 +31,21 @@ export class AuthController {
     private readonly origins: OriginValidator,
   ) {}
 
+  @UseGuards(RedisThrottlerGuard)
+  @SkipThrottle({
+    [RATE_LIMIT_NAMES.LOGIN]: true,
+    [RATE_LIMIT_NAMES.REFRESH]: true,
+  })
   @Post('register')
   register(@Body() credentials: CredentialsDto) {
     return this.auth.register(credentials);
   }
 
+  @UseGuards(RedisThrottlerGuard)
+  @SkipThrottle({
+    [RATE_LIMIT_NAMES.REFRESH]: true,
+    [RATE_LIMIT_NAMES.REGISTER]: true,
+  })
   @HttpCode(HttpStatus.OK)
   @Post('login')
   async login(
@@ -44,6 +57,11 @@ export class AuthController {
     return access;
   }
 
+  @UseGuards(RedisThrottlerGuard)
+  @SkipThrottle({
+    [RATE_LIMIT_NAMES.LOGIN]: true,
+    [RATE_LIMIT_NAMES.REGISTER]: true,
+  })
   @HttpCode(HttpStatus.OK)
   @Post('refresh')
   async refresh(

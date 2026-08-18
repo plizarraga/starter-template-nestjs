@@ -19,6 +19,21 @@ type AuthenticationSessionCommands = {
   ): Promise<[number, string]>;
 };
 
+type RateLimitCommands = {
+  incrementRateLimit(
+    counterKey: string,
+    ttlMilliseconds: number,
+    limit: number,
+  ): Promise<[number, number, number]>;
+};
+
+export type RateLimitResult = {
+  isBlocked: boolean;
+  timeToBlockExpire: number;
+  timeToExpire: number;
+  totalHits: number;
+};
+
 const rotateAuthenticationSessionLua = `
 local stored = redis.call('HGET', KEYS[1], 'refreshSecretHmac')
 if not stored or string.len(stored) ~= string.len(ARGV[1]) then return {0, ''} end
@@ -54,6 +69,21 @@ end
 return redis.call('DEL', KEYS[1])
 `;
 
+const incrementRateLimitLua = `
+local totalHits = redis.call('INCR', KEYS[1])
+if totalHits == 1 then
+  redis.call('PEXPIRE', KEYS[1], ARGV[1])
+end
+local timeToExpire = redis.call('PTTL', KEYS[1])
+if timeToExpire < 0 then
+  timeToExpire = tonumber(ARGV[1])
+end
+if totalHits > tonumber(ARGV[2]) then
+  return {totalHits, timeToExpire, 1}
+end
+return {totalHits, timeToExpire, 0}
+`;
+
 @Injectable()
 export class RedisService implements OnModuleDestroy {
   constructor(
@@ -70,6 +100,10 @@ export class RedisService implements OnModuleDestroy {
     });
     this.client.defineCommand('revokeUserAuthenticationSessions', {
       lua: revokeUserAuthenticationSessionsLua,
+      numberOfKeys: 1,
+    });
+    this.client.defineCommand('incrementRateLimit', {
+      lua: incrementRateLimitLua,
       numberOfKeys: 1,
     });
   }
@@ -153,6 +187,32 @@ export class RedisService implements OnModuleDestroy {
       await (
         this.client as Redis & AuthenticationSessionCommands
       ).revokeUserAuthenticationSessions(`auth:user-sessions:${userId}`);
+    } catch {
+      throw new PlatformError('SERVICE_UNAVAILABLE');
+    }
+  }
+
+  async incrementRateLimit(
+    counterKey: string,
+    ttlMilliseconds: number,
+    limit: number,
+  ): Promise<RateLimitResult> {
+    try {
+      await this.connectIfNeeded();
+      const [totalHits, timeToExpireMs, blocked] = await (
+        this.client as Redis & RateLimitCommands
+      ).incrementRateLimit(
+        `rate-limit:${counterKey}`,
+        ttlMilliseconds,
+        limit,
+      );
+      const timeToExpire = Math.ceil(timeToExpireMs / 1000);
+      return {
+        isBlocked: blocked === 1,
+        timeToBlockExpire: blocked === 1 ? timeToExpire : 0,
+        timeToExpire,
+        totalHits,
+      };
     } catch {
       throw new PlatformError('SERVICE_UNAVAILABLE');
     }

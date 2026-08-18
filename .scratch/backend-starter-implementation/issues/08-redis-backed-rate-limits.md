@@ -4,8 +4,8 @@
 
 **Blocked by:** 05 — Implement refresh and session revocation.
 
-**Status:** ready-for-agent
+**Status:** completed
 
-- [ ] Registration, login, and refresh enforce their configured per-IP limits through Redis-backed counters.
-- [ ] Exceeded limits return the standard 429 RATE_LIMIT_EXCEEDED contract.
-- [ ] Limit configuration is validated and endpoint behavior is covered by automated tests.
+- [x] Registration, login, and refresh enforce their configured per-IP limits through Redis-backed counters.
+- [x] Exceeded limits return the standard 429 RATE_LIMIT_EXCEEDED contract.
+- [x] Limit configuration is validated and endpoint behavior is covered by automated tests.
