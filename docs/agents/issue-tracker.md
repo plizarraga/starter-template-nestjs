@@ -11,6 +11,14 @@ Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all o
 - **Apply / remove labels**: `gh issue edit <number> --add-label "..."` / `--remove-label "..."`
 - **Close**: `gh issue close <number> --comment "..."`
 
+## Kanban workflow
+
+Project #1 (`starter-template-nestjs`) is the canonical execution board.
+
+- When work starts on a spec, feature, task, or bug ticket, move its card to `In Progress` before changing code.
+- When its acceptance criteria and verification are complete, move its card to `Done` and then close the issue.
+- Do not move blocked or unstarted work out of `Todo`.
+
 Infer the repo from `git remote -v` — `gh` does this automatically when run inside a clone.
 
 ## Pull requests as a triage surface
