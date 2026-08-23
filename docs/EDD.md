@@ -12,21 +12,21 @@ microservices.
 
 ## 2. Decisions
 
-| Concern | Decision |
-| --- | --- |
-| Runtime | Node.js 24 LTS, TypeScript, NestJS 11 |
-| Architecture | Modular monolith using conventional Nest controllers, services, and repositories |
-| Persistent data | PostgreSQL accessed through Prisma |
-| Session state and rate limits | Redis accessed through an encapsulated `ioredis` module |
-| Access credentials | HS256 JWTs, verified locally with `@nestjs/jwt` |
-| Refresh credentials | Opaque `sessionId.secret` cookie, stored only as an HMAC in Redis |
-| Password hashing | `argon2id` via the `argon2` package |
-| HTTP validation | DTOs using `class-validator` and `class-transformer` |
-| Configuration | `@nestjs/config` with Joi validation at startup |
-| Logging | JSON logs through `nestjs-pino` and Pino |
-| Tests | Vitest, V8 coverage, and Testcontainers for integration/E2E tests |
-| API documentation | Swagger/OpenAPI at `/docs` outside production only |
-| Delivery | Docker multi-stage image and GitHub Actions |
+| Concern                       | Decision                                                                         |
+| ----------------------------- | -------------------------------------------------------------------------------- |
+| Runtime                       | Node.js 24 LTS, TypeScript, NestJS 11                                            |
+| Architecture                  | Modular monolith using conventional Nest controllers, services, and repositories |
+| Persistent data               | PostgreSQL accessed through Prisma                                               |
+| Session state and rate limits | Redis accessed through an encapsulated `ioredis` module                          |
+| Access credentials            | HS256 JWTs, verified locally with `@nestjs/jwt`                                  |
+| Refresh credentials           | Opaque `sessionId.secret` cookie, stored only as an HMAC in Redis                |
+| Password hashing              | `argon2id` via the `argon2` package                                              |
+| HTTP validation               | DTOs using `class-validator` and `class-transformer`                             |
+| Configuration                 | `@nestjs/config` with Joi validation at startup                                  |
+| Logging                       | JSON logs through `nestjs-pino` and Pino                                         |
+| Tests                         | Vitest, V8 coverage, and Testcontainers for integration/E2E tests                |
+| API documentation             | Swagger/OpenAPI at `/docs` outside production only                               |
+| Delivery                      | Docker multi-stage image and GitHub Actions                                      |
 
 ## 3. Project Structure
 
@@ -94,10 +94,11 @@ the Prisma CLI reads `.env`).
 
 ## 5. PostgreSQL and Prisma
 
-### 5.1 User model
+### 5.1 Better Auth identity model
 
-Prisma owns the PostgreSQL schema and generated client. Users are durable data;
-refresh sessions are not stored in PostgreSQL.
+Prisma owns the PostgreSQL schema and generated client. Better Auth owns the
+durable identity records: users, sessions, credential accounts, and verification
+records. The application role remains on the one Better Auth user record.
 
 Prisma ORM v7 replaces the Rust query engine with a driver adapter: the
 generated client is emitted to `src/generated/prisma` (provider
@@ -110,21 +111,35 @@ must already exist there.
 
 ```text
 User
-  id            UUID primary key
-  email         unique, normalized lowercase string
-  passwordHash  argon2id encoded hash; never selected for public output
-  role          USER | ADMIN
-  createdAt     timestamp with time zone
-  updatedAt     timestamp with time zone
+  id             string primary key
+  name           required display name
+  email          unique, normalized lowercase string
+  emailVerified  boolean
+  image          optional URL
+  role           USER | ADMIN, default USER
+  createdAt      timestamp with time zone
+  updatedAt      timestamp with time zone
+
+Session
+  id, token, expiresAt, userId, optional IP address and user agent
+
+Account
+  id, accountId, providerId, userId, optional provider tokens and password hash
+
+Verification
+  id, identifier, value, expiresAt
 ```
 
 The application normalizes every email with `trim().toLowerCase()` before
 validation, uniqueness checks, writes, login lookup, and search. It does not
 apply provider-specific rewrites such as Gmail dot or plus-address handling.
 
-Public user DTOs include only `id`, `email`, `role`, `createdAt`, and
-`updatedAt`. Repositories expose a distinct internal method when a password
-hash is needed for login or sensitive profile changes.
+Better Auth stores email/password hashes in the `Account.password` field for
+the `credential` provider. The nullable `User.passwordHash` remains only until
+the legacy authentication implementation is removed; legacy registration and
+administrator bootstrap continue to write it during that transition, while
+Better Auth does not read or write it. Public user DTOs never expose account
+credentials.
 
 ### 5.2 Migrations and seeding
 
@@ -144,7 +159,8 @@ hash is needed for login or sensitive profile changes.
   development-only dependency.
 - `pnpm seed:admin` is an idempotent command. It reads
   `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD`, normalizes and hashes the
-  password, and creates or promotes that user to `ADMIN`.
+  password, creates a Better Auth credential user or promotes the existing user
+  to `ADMIN`.
 - The seed command is explicit operational work, never implicit API startup
   behavior.
 
@@ -254,14 +270,14 @@ CSRF-token contract.
 
 ### 7.3 Endpoint behavior
 
-| Endpoint | Design |
-| --- | --- |
-| `POST /auth/register` | Validates input, normalizes email, always creates `USER`, and rejects duplicates with 409 `USER_EMAIL_ALREADY_EXISTS`. |
-| `POST /auth/login` | Returns 401 `INVALID_CREDENTIALS` for either unknown email or incorrect password; creates an independent Redis session on success. |
-| `POST /auth/refresh` | Uses the atomic Lua rotation operation. Any missing, expired, reused, or mismatched refresh credential returns 401. |
-| `POST /auth/logout` | Revokes the session identified by the refresh cookie, clears the cookie, and returns 204. It is idempotent where possible. |
-| `POST /auth/logout-all` | Requires a valid access token, revokes every indexed session for the principal, and returns 204. |
-| `PATCH /auth/password` | Requires a valid access token and current password, writes a new argon2id hash, revokes all refresh sessions, and returns 204. |
+| Endpoint                | Design                                                                                                                             |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /auth/register`   | Validates input, normalizes email, always creates `USER`, and rejects duplicates with 409 `USER_EMAIL_ALREADY_EXISTS`.             |
+| `POST /auth/login`      | Returns 401 `INVALID_CREDENTIALS` for either unknown email or incorrect password; creates an independent Redis session on success. |
+| `POST /auth/refresh`    | Uses the atomic Lua rotation operation. Any missing, expired, reused, or mismatched refresh credential returns 401.                |
+| `POST /auth/logout`     | Revokes the session identified by the refresh cookie, clears the cookie, and returns 204. It is idempotent where possible.         |
+| `POST /auth/logout-all` | Requires a valid access token, revokes every indexed session for the principal, and returns 204.                                   |
+| `PATCH /auth/password`  | Requires a valid access token and current password, writes a new argon2id hash, revokes all refresh sessions, and returns 204.     |
 
 `PATCH /users/me` accepts `email` and `currentPassword`. It verifies the current
 password, normalizes and updates the email, revokes all refresh sessions, and
@@ -370,11 +386,11 @@ logging which credential component was invalid.
 
 Redis-backed limits apply per client IP:
 
-| Route | Limit |
-| --- | --- |
-| `POST /auth/register` | 5 per hour |
-| `POST /auth/login` | 10 per 15 minutes |
-| `POST /auth/refresh` | 30 per 15 minutes |
+| Route                 | Limit             |
+| --------------------- | ----------------- |
+| `POST /auth/register` | 5 per hour        |
+| `POST /auth/login`    | 10 per 15 minutes |
+| `POST /auth/refresh`  | 30 per 15 minutes |
 
 Exceeded limits return 429 `RATE_LIMIT_EXCEEDED`. The Redis-backed implementation
 ensures all application replicas apply the same counters.
@@ -420,24 +436,24 @@ before Nest starts listening. Container environments often inject unrelated
 variables, so the schema validates all application variables while allowing
 unknown external variables.
 
-| Variable | Default / requirement |
-| --- | --- |
-| `NODE_ENV` | `development`, `test`, or `production`; required enum |
-| `PORT` | `3000` |
-| `DATABASE_URL` | required PostgreSQL URL |
-| `DATABASE_SCHEMA` | PostgreSQL schema for generated queries, `public` |
-| `REDIS_URL` | required Redis URL |
-| `JWT_SECRET` | required high-entropy HS256 secret |
-| `JWT_ISSUER` / `JWT_AUDIENCE` | required token claims |
-| `ACCESS_TOKEN_TTL_SECONDS` | `600` |
-| `REFRESH_TOKEN_TTL_DAYS` | `30` |
-| `REFRESH_TOKEN_HMAC_SECRET` | required, distinct high-entropy secret |
-| `CORS_ORIGINS` | required comma-separated web-origin allowlist in deployed environments |
-| `COOKIE_NAME` | `refresh_token` |
-| `LOG_LEVEL` | `info` in production, `debug` in development |
-| `ARGON2_MEMORY_COST`, `ARGON2_TIME_COST`, `ARGON2_PARALLELISM` | `65536`, `3`, `4` |
-| `RATE_LIMIT_*` | the route limits defined above |
-| `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | required only by `seed:admin` |
+| Variable                                                       | Default / requirement                                                  |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `NODE_ENV`                                                     | `development`, `test`, or `production`; required enum                  |
+| `PORT`                                                         | `3000`                                                                 |
+| `DATABASE_URL`                                                 | required PostgreSQL URL                                                |
+| `DATABASE_SCHEMA`                                              | PostgreSQL schema for generated queries, `public`                      |
+| `REDIS_URL`                                                    | required Redis URL                                                     |
+| `JWT_SECRET`                                                   | required high-entropy HS256 secret                                     |
+| `JWT_ISSUER` / `JWT_AUDIENCE`                                  | required token claims                                                  |
+| `ACCESS_TOKEN_TTL_SECONDS`                                     | `600`                                                                  |
+| `REFRESH_TOKEN_TTL_DAYS`                                       | `30`                                                                   |
+| `REFRESH_TOKEN_HMAC_SECRET`                                    | required, distinct high-entropy secret                                 |
+| `CORS_ORIGINS`                                                 | required comma-separated web-origin allowlist in deployed environments |
+| `COOKIE_NAME`                                                  | `refresh_token`                                                        |
+| `LOG_LEVEL`                                                    | `info` in production, `debug` in development                           |
+| `ARGON2_MEMORY_COST`, `ARGON2_TIME_COST`, `ARGON2_PARALLELISM` | `65536`, `3`, `4`                                                      |
+| `RATE_LIMIT_*`                                                 | the route limits defined above                                         |
+| `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD`                     | required only by `seed:admin`                                          |
 
 Production requires `Secure` cookies and does not enable Swagger. Secrets are
 not committed to `.env` files, logs, Docker images, or error responses.
@@ -447,11 +463,11 @@ not committed to `.env` files, logs, Docker images, or error responses.
 Vitest replaces Jest. `vitest.config.ts` declares three Node-environment test
 projects:
 
-| Project | Files | Dependencies |
-| --- | --- | --- |
-| unit | `src/**/*.spec.ts` | mocks/fakes only |
+| Project     | Files                           | Dependencies                        |
+| ----------- | ------------------------------- | ----------------------------------- |
+| unit        | `src/**/*.spec.ts`              | mocks/fakes only                    |
 | integration | `test/integration/**/*.spec.ts` | Testcontainers PostgreSQL and Redis |
-| e2e | `test/e2e/**/*.spec.ts` | full Nest app plus Testcontainers |
+| e2e         | `test/e2e/**/*.spec.ts`         | full Nest app plus Testcontainers   |
 
 V8 coverage is the coverage provider. Testcontainers provides isolated services
 for integration and E2E tests; Docker is therefore required for those suites.
@@ -501,43 +517,43 @@ image. The cloud provider and secret manager remain intentionally out of scope.
 
 ## 13. Security Invariant Mapping
 
-| Invariant | Implementation mechanism |
-| --- | --- |
-| S1–S2 | argon2id hashes and public-user mappers prevent plaintext storage and hash exposure. |
-| S3 | Registration DTO has no role field; service always writes `USER`. |
-| S4–S5 | Local JWT verification constructs the principal without Redis or PostgreSQL. |
-| S6 | Configured 10-minute access-token TTL. |
-| S7–S10 | Redis session TTL, opaque refresh token, HMAC protection, and Lua rotation. |
-| S11 | Password and email changes revoke all Redis sessions. |
-| S12 | Refresh and revocation return service errors when Redis is unavailable; no fail-open path exists. |
-| S13 | Central exception filter maps internal exceptions to stable public errors. |
-| S14 | Pino redaction and DTO discipline exclude secrets from logs. |
-| S15 | DTO enum plus repository allowlist maps sorting to Prisma fields. |
-| S16 | Request-ID middleware, response header, error filter, and Pino context share one ID. |
+| Invariant | Implementation mechanism                                                                          |
+| --------- | ------------------------------------------------------------------------------------------------- |
+| S1–S2     | argon2id hashes and public-user mappers prevent plaintext storage and hash exposure.              |
+| S3        | Registration DTO has no role field; service always writes `USER`.                                 |
+| S4–S5     | Local JWT verification constructs the principal without Redis or PostgreSQL.                      |
+| S6        | Configured 10-minute access-token TTL.                                                            |
+| S7–S10    | Redis session TTL, opaque refresh token, HMAC protection, and Lua rotation.                       |
+| S11       | Password and email changes revoke all Redis sessions.                                             |
+| S12       | Refresh and revocation return service errors when Redis is unavailable; no fail-open path exists. |
+| S13       | Central exception filter maps internal exceptions to stable public errors.                        |
+| S14       | Pino redaction and DTO discipline exclude secrets from logs.                                      |
+| S15       | DTO enum plus repository allowlist maps sorting to Prisma fields.                                 |
+| S16       | Request-ID middleware, response header, error filter, and Pino context share one ID.              |
 
 ### Per-test evidence
 
 Each invariant is proven by the tests below, mapping one-to-one to
 `docs/PRODUCT_SPEC.md` §51 (S1–S16).
 
-| # | Invariant | Evidence |
-| --- | --- | --- |
-| S1 | Passwords never stored as plaintext | `src/auth/auth.service.spec.ts` (register hashes via `PasswordService`, never persists raw password); `src/auth/password.service.ts` (argon2id-only hashing) |
-| S2 | Password hashes never returned publicly | `test/e2e/auth.spec.ts`, `test/e2e/admin-users.spec.ts` (`not.toHaveProperty('passwordHash')`); `src/users/users.repository.ts` (`toPublicUser`) |
-| S3 | Public registration cannot grant privileged roles | `test/e2e/auth.spec.ts` ("When registration includes a role field, then it is rejected instead of being honored"); `src/auth/auth.service.spec.ts` (register hardcodes `Role.USER`) |
-| S4 | Normal access authentication performs no session lookup | `test/e2e/auth.spec.ts` ("When a refresh session has been revoked, then the still-valid access token continues to authenticate normal requests") |
-| S5 | Normal access authentication performs no persistent-user lookup | `test/e2e/auth.spec.ts` ("When the underlying user record no longer exists, then the still-valid access token continues to authenticate normal requests") |
-| S6 | Access credentials are short-lived | `src/auth/access-token.service.spec.ts` ("When an access token has expired, then it is rejected as expired rather than merely invalid") |
-| S7 | Refresh sessions are revocable | `test/e2e/auth.spec.ts` (logout and logout-all tests) |
-| S8 | Refresh credentials rotate | `test/e2e/auth.spec.ts` (refresh rotation test); `src/auth/auth.service.spec.ts` |
-| S9 | Consumed refresh credentials cannot be successfully reused | `test/e2e/auth.spec.ts` ("then it rotates once and rejects reuse") |
-| S10 | Concurrent refresh cannot consume the same credential multiple times successfully | `test/e2e/auth.spec.ts` ("When refresh is concurrent, then exactly one request succeeds") |
-| S11 | Password changes revoke refresh sessions | `test/e2e/auth.spec.ts` (password change test); `src/auth/auth.service.spec.ts` |
-| S12 | Session-store failure fails closed | `src/auth/auth.service.spec.ts` ("When the session store fails, then login fails closed instead of returning tokens") |
-| S13 | Errors never expose infrastructure internals | `test/e2e/http-platform.spec.ts` ("When an unhandled exception occurs, then the response hides infrastructure internals behind the generic error contract") |
-| S14 | Logs never expose authentication secrets | `test/e2e/logging.spec.ts` (real `LoggerModule.forRoot` + production `pinoRedaction` wiring); `src/platform/logging/platform-logger.spec.ts` |
-| S15 | Sorting uses an explicit allowlist | `test/e2e/admin-users.spec.ts` (`sortBy=passwordHash` → 400 `VALIDATION_ERROR`); `src/users/users.repository.ts` (`sortFieldMap`) |
-| S16 | All requests are traceable through a request ID | `test/e2e/http-platform.spec.ts` (request ID propagation tests); `test/e2e/auth.spec.ts` (`requestId` on error bodies) |
+| #   | Invariant                                                                         | Evidence                                                                                                                                                                            |
+| --- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S1  | Passwords never stored as plaintext                                               | `src/auth/auth.service.spec.ts` (register hashes via `PasswordService`, never persists raw password); `src/auth/password.service.ts` (argon2id-only hashing)                        |
+| S2  | Password hashes never returned publicly                                           | `test/e2e/auth.spec.ts`, `test/e2e/admin-users.spec.ts` (`not.toHaveProperty('passwordHash')`); `src/users/users.repository.ts` (`toPublicUser`)                                    |
+| S3  | Public registration cannot grant privileged roles                                 | `test/e2e/auth.spec.ts` ("When registration includes a role field, then it is rejected instead of being honored"); `src/auth/auth.service.spec.ts` (register hardcodes `Role.USER`) |
+| S4  | Normal access authentication performs no session lookup                           | `test/e2e/auth.spec.ts` ("When a refresh session has been revoked, then the still-valid access token continues to authenticate normal requests")                                    |
+| S5  | Normal access authentication performs no persistent-user lookup                   | `test/e2e/auth.spec.ts` ("When the underlying user record no longer exists, then the still-valid access token continues to authenticate normal requests")                           |
+| S6  | Access credentials are short-lived                                                | `src/auth/access-token.service.spec.ts` ("When an access token has expired, then it is rejected as expired rather than merely invalid")                                             |
+| S7  | Refresh sessions are revocable                                                    | `test/e2e/auth.spec.ts` (logout and logout-all tests)                                                                                                                               |
+| S8  | Refresh credentials rotate                                                        | `test/e2e/auth.spec.ts` (refresh rotation test); `src/auth/auth.service.spec.ts`                                                                                                    |
+| S9  | Consumed refresh credentials cannot be successfully reused                        | `test/e2e/auth.spec.ts` ("then it rotates once and rejects reuse")                                                                                                                  |
+| S10 | Concurrent refresh cannot consume the same credential multiple times successfully | `test/e2e/auth.spec.ts` ("When refresh is concurrent, then exactly one request succeeds")                                                                                           |
+| S11 | Password changes revoke refresh sessions                                          | `test/e2e/auth.spec.ts` (password change test); `src/auth/auth.service.spec.ts`                                                                                                     |
+| S12 | Session-store failure fails closed                                                | `src/auth/auth.service.spec.ts` ("When the session store fails, then login fails closed instead of returning tokens")                                                               |
+| S13 | Errors never expose infrastructure internals                                      | `test/e2e/http-platform.spec.ts` ("When an unhandled exception occurs, then the response hides infrastructure internals behind the generic error contract")                         |
+| S14 | Logs never expose authentication secrets                                          | `test/e2e/logging.spec.ts` (real `LoggerModule.forRoot` + production `pinoRedaction` wiring); `src/platform/logging/platform-logger.spec.ts`                                        |
+| S15 | Sorting uses an explicit allowlist                                                | `test/e2e/admin-users.spec.ts` (`sortBy=passwordHash` → 400 `VALIDATION_ERROR`); `src/users/users.repository.ts` (`sortFieldMap`)                                                   |
+| S16 | All requests are traceable through a request ID                                   | `test/e2e/http-platform.spec.ts` (request ID propagation tests); `test/e2e/auth.spec.ts` (`requestId` on error bodies)                                                              |
 
 ## 14. Out of Scope
 

@@ -41,6 +41,7 @@ export class AuthService {
       return this.rejectInvalidCredentials();
     }
     if (
+      user.passwordHash === null ||
       !(await this.passwords.verify(credentials.password, user.passwordHash))
     ) {
       return this.rejectInvalidCredentials();
@@ -134,7 +135,10 @@ export class AuthService {
     if (user === null) {
       throw new PlatformError('USER_NOT_FOUND');
     }
-    if (!(await this.passwords.verify(password, user.passwordHash))) {
+    if (
+      user.passwordHash === null ||
+      !(await this.passwords.verify(password, user.passwordHash))
+    ) {
       throw new PlatformError('INVALID_CREDENTIALS');
     }
     return user;

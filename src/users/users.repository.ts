@@ -4,7 +4,10 @@ import { PlatformError } from '../platform/errors/platform-error';
 import { PrismaService } from '../platform/prisma/prisma.service';
 import { SortField, SortOrder } from './dto/list-users-query.dto';
 
-export type PublicUser = Omit<User, 'passwordHash'>;
+export type PublicUser = Pick<
+  User,
+  'createdAt' | 'email' | 'id' | 'role' | 'updatedAt'
+>;
 
 export type UserTransaction = {
   countAdmins(): Promise<number>;
@@ -67,7 +70,9 @@ export class UsersRepository {
     role: Role;
   }): Promise<PublicUser> {
     try {
-      const user = await this.prisma.user.create({ data: input });
+      const user = await this.prisma.user.create({
+        data: { ...input, name: input.email },
+      });
       return this.toPublicUser(user);
     } catch (error) {
       if (
