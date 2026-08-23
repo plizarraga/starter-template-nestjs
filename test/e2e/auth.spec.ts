@@ -1,3 +1,5 @@
+import { execFile as executeFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../../src/generated/prisma/client';
@@ -10,6 +12,8 @@ import {
   createTestEnvironment,
   TestEnvironment,
 } from '../support/test-environment';
+
+const execFile = promisify(executeFile);
 
 describe('Better Auth authentication (e2e)', () => {
   let app: NestExpressApplication;
@@ -130,5 +134,84 @@ describe('Better Auth authentication (e2e)', () => {
       expect.arrayContaining([expect.stringContaining('better-auth.session_token=')]),
     );
     expect(renewedSession).not.toBeNull();
+  });
+
+  it('When browser sessions belong to users with different roles, then only the administrator can list users', async () => {
+    const regularEmail = 'regular@example.com';
+    const adminEmail = 'administrator@example.com';
+    const promotedEmail = 'promoted-administrator@example.com';
+    await request(app.getHttpServer())
+      .post('/api/auth/sign-up/email')
+      .send({ name: 'Regular user', email: regularEmail, password: 'password-123' })
+      .expect(200);
+    await request(app.getHttpServer())
+      .post('/api/auth/sign-up/email')
+      .send({
+        name: 'Promoted administrator',
+        email: promotedEmail,
+        password: 'password-123',
+      })
+      .expect(200);
+
+    const prisma = new PrismaClient({
+      adapter: new PrismaPg(
+        { connectionString: environment.databaseUrl },
+        { schema: environment.schema },
+      ),
+    });
+    const seedEnvironment = {
+      ...process.env,
+      DATABASE_SCHEMA: environment.schema,
+      DATABASE_URL: environment.databaseUrl,
+      SEED_ADMIN_EMAIL: adminEmail,
+      SEED_ADMIN_PASSWORD: 'password-123',
+    };
+    await execFile('pnpm', ['seed:admin'], { env: seedEnvironment });
+    await execFile('pnpm', ['seed:admin'], { env: seedEnvironment });
+    await execFile('pnpm', ['seed:admin'], {
+      env: { ...seedEnvironment, SEED_ADMIN_EMAIL: promotedEmail },
+    });
+    expect(await prisma.user.count({ where: { email: adminEmail } })).toBe(1);
+    expect(
+      await prisma.user.findUnique({
+        select: { role: true },
+        where: { email: promotedEmail },
+      }),
+    ).toMatchObject({ role: 'ADMIN' });
+    await prisma.$disconnect();
+
+    const [regularLogin, adminLogin, promotedLogin] = await Promise.all(
+      [regularEmail, adminEmail, promotedEmail].map((email) =>
+        request(app.getHttpServer())
+          .post('/api/auth/sign-in/email')
+          .send({ email, password: 'password-123' })
+          .expect(200),
+      ),
+    );
+    const regularCookie = regularLogin.headers['set-cookie']?.[0] ?? '';
+    const adminCookie = adminLogin.headers['set-cookie']?.[0] ?? '';
+    const promotedCookie = promotedLogin.headers['set-cookie']?.[0] ?? '';
+
+    await request(app.getHttpServer())
+      .get('/users')
+      .set('Cookie', regularCookie)
+      .expect(403)
+      .expect(({ body }: { body: { code: string } }) =>
+        expect(body.code).toBe('FORBIDDEN'),
+      );
+    await request(app.getHttpServer())
+      .get('/users')
+      .set('Cookie', adminCookie)
+      .expect(200)
+      .expect(
+        ({ body }: { body: { data: Array<{ email: string }> } }) =>
+          expect(body.data.map(({ email }) => email)).toEqual(
+            expect.arrayContaining([regularEmail, adminEmail]),
+          ),
+      );
+    await request(app.getHttpServer())
+      .get('/users')
+      .set('Cookie', promotedCookie)
+      .expect(200);
   });
 });
