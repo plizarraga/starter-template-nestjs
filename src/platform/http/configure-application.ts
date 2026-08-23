@@ -40,26 +40,13 @@ export function configureApplication(app: NestExpressApplication): void {
       new DocumentBuilder()
         .setTitle('Backend Starter API')
         .setDescription(
-          'REST API for user authentication and administration. ' +
-            'Access tokens are short-lived JWTs (600s by default) returned by ' +
-            'POST /auth/login; refresh credentials travel in an httpOnly cookie ' +
-            'scoped to /auth.',
+          'User administration API protected by Better Auth session cookies. ' +
+            'Native authentication routes are mounted at /api/auth.',
         )
         .setVersion('1.0')
         .addTag('health', 'Liveness and readiness probes')
-        .addTag('auth', 'Authentication and session management')
+        .addTag('auth', 'Native Better Auth authentication')
         .addTag('users', 'Profile and user administration (RBAC)')
-        .addBearerAuth(
-          {
-            bearerFormat: 'JWT',
-            description:
-              'Short-lived access token returned by POST /auth/login. ' +
-              'Paste the raw token (the Authorize dialog adds the "Bearer " prefix).',
-            scheme: 'bearer',
-            type: 'http',
-          },
-          'access-token',
-        )
         .build(),
     );
     SwaggerModule.setup('docs', app, document);
