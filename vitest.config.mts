@@ -1,6 +1,6 @@
-import vitest = require('vitest/config');
+import { defineConfig } from 'vitest/config';
 
-export = vitest.defineConfig({
+export default defineConfig({
   test: {
     coverage: {
       provider: 'v8',
