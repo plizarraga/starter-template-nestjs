@@ -35,7 +35,9 @@ describe('SessionGuard', () => {
     const response = {};
     const guard = new SessionGuard(auth as never, users as never);
 
-    await expect(guard.canActivate(context(request, response))).resolves.toBe(true);
+    await expect(guard.canActivate(context(request, response))).resolves.toBe(
+      true,
+    );
     expect(request).toMatchObject({
       principal: { id: 'user-1', role: Role.ADMIN },
     });

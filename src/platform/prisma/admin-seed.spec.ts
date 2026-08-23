@@ -17,9 +17,9 @@ describe('seedAdmin', () => {
     const accountUpsert = vi.fn<
       Parameters<typeof seedAdmin>[0]['account']['upsert']
     >(({ create, update, where }) => {
-        expect(create.accountId).toBe('admin-id');
-        expect(create.issuer).toBe('local:credential');
-        expect(create.password).toBe('encoded-password');
+      expect(create.accountId).toBe('admin-id');
+      expect(create.issuer).toBe('local:credential');
+      expect(create.password).toBe('encoded-password');
       expect(create.providerId).toBe('credential');
       expect(create.userId).toBe('admin-id');
       expect(update).toEqual({});

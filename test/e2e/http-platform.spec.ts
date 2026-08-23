@@ -213,7 +213,9 @@ describe('HTTP platform (e2e)', () => {
     const environment = { ...process.env };
     delete environment.BETTER_AUTH_SECRET;
 
-    expect(() => validateEnvironment(environment)).toThrow('BETTER_AUTH_SECRET');
+    expect(() => validateEnvironment(environment)).toThrow(
+      'BETTER_AUTH_SECRET',
+    );
   });
 
   it('When unrelated container configuration is present, then application configuration accepts it', () => {

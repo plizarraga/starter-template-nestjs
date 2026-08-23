@@ -47,7 +47,9 @@ export async function createTestEnvironment(): Promise<TestEnvironment> {
           '--command',
           `SELECT EXISTS (SELECT FROM pg_namespace WHERE nspname = '${schema}')`,
         ]);
-        return schemaResult.exitCode === 0 && schemaResult.output.trim() === 't';
+        return (
+          schemaResult.exitCode === 0 && schemaResult.output.trim() === 't'
+        );
       },
     };
   } catch (error) {

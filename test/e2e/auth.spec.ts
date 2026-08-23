@@ -126,12 +126,16 @@ describe('Better Auth authentication (e2e)', () => {
       .set('Cookie', cookie)
       .expect(200);
     const renewedSession = await prisma.session.findFirst({
-      where: { expiresAt: { gt: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000) } },
+      where: {
+        expiresAt: { gt: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000) },
+      },
     });
     await prisma.$disconnect();
 
     expect(response.headers['set-cookie']).toEqual(
-      expect.arrayContaining([expect.stringContaining('better-auth.session_token=')]),
+      expect.arrayContaining([
+        expect.stringContaining('better-auth.session_token='),
+      ]),
     );
     expect(renewedSession).not.toBeNull();
   });
@@ -142,7 +146,11 @@ describe('Better Auth authentication (e2e)', () => {
     const promotedEmail = 'promoted-administrator@example.com';
     await request(app.getHttpServer())
       .post('/api/auth/sign-up/email')
-      .send({ name: 'Regular user', email: regularEmail, password: 'password-123' })
+      .send({
+        name: 'Regular user',
+        email: regularEmail,
+        password: 'password-123',
+      })
       .expect(200);
     await request(app.getHttpServer())
       .post('/api/auth/sign-up/email')
@@ -203,11 +211,10 @@ describe('Better Auth authentication (e2e)', () => {
       .get('/users')
       .set('Cookie', adminCookie)
       .expect(200)
-      .expect(
-        ({ body }: { body: { data: Array<{ email: string }> } }) =>
-          expect(body.data.map(({ email }) => email)).toEqual(
-            expect.arrayContaining([regularEmail, adminEmail]),
-          ),
+      .expect(({ body }: { body: { data: Array<{ email: string }> } }) =>
+        expect(body.data.map(({ email }) => email)).toEqual(
+          expect.arrayContaining([regularEmail, adminEmail]),
+        ),
       );
     await request(app.getHttpServer())
       .get('/users')
