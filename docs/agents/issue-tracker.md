@@ -17,7 +17,8 @@ Project #1 (`starter-template-nestjs`) is the canonical execution board.
 
 - A standalone spec tracks its own authoring lifecycle: move it to `In Progress` while it is drafted and reviewed, then to `Done` when approved. It does not wait for implementation tickets.
 - An epic tracks delivery: move it to `In Progress` while any sub-issue is active, and to `Done` only when every sub-issue is complete. Use GitHub-native sub-issues so its progress is visible on the board.
-- When work starts on a feature, task, or bug ticket, move its card to `In Progress` before changing code.
+- Before changing code for a feature, task, or bug ticket, move its card from `Todo` to `In Progress`.
+- During execution, keep the card in `In Progress`; if work becomes blocked, return it to `Todo` and record the blocker on the issue. Move it back to `In Progress` when work resumes.
 - When its acceptance criteria and verification are complete, move its card to `Done` and then close the issue.
 - Do not move blocked or unstarted work out of `Todo`.
 
