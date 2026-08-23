@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { hashSeedPassword, seedAdmin } from './admin-seed';
+import { seedAdmin } from './admin-seed';
 
 describe('seedAdmin', () => {
   it('normalizes the configured email and creates an administrator', async () => {
@@ -8,11 +8,7 @@ describe('seedAdmin', () => {
         expect(create.email).toBe('admin@example.com');
         expect(create.emailVerified).toBe(false);
         expect(create.name).toBe('admin@example.com');
-        expect(create.passwordHash).toBe('encoded-password');
         expect(create.role).toBe('ADMIN');
-        expect(create.accounts.create.accountId).toBe(create.id);
-        expect(create.accounts.create.password).toBe('encoded-password');
-        expect(create.accounts.create.providerId).toBe('credential');
         expect(update).toEqual({ role: 'ADMIN' });
         expect(where).toEqual({ email: 'admin@example.com' });
         return Promise.resolve({ id: 'admin-id' });
@@ -21,15 +17,16 @@ describe('seedAdmin', () => {
     const accountUpsert = vi.fn<
       Parameters<typeof seedAdmin>[0]['account']['upsert']
     >(({ create, update, where }) => {
-      expect(create.accountId).toBe('admin-id');
-      expect(create.password).toBe('encoded-password');
+        expect(create.accountId).toBe('admin-id');
+        expect(create.issuer).toBe('local:credential');
+        expect(create.password).toBe('encoded-password');
       expect(create.providerId).toBe('credential');
       expect(create.userId).toBe('admin-id');
       expect(update).toEqual({});
       expect(where).toEqual({
-        providerId_accountId: {
+        issuer_accountId: {
           accountId: 'admin-id',
-          providerId: 'credential',
+          issuer: 'local:credential',
         },
       });
       return Promise.resolve();
@@ -104,10 +101,5 @@ describe('seedAdmin', () => {
 
     expect(userUpsert).toHaveBeenCalledOnce();
     expect(accountUpsert).toHaveBeenCalledOnce();
-  });
-  it('hashes a seed password with the default argon2 parameters', async () => {
-    const hash = await hashSeedPassword('secure-password');
-
-    expect(hash).toMatch(/^\$argon2id\$/);
   });
 });

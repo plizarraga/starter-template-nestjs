@@ -42,15 +42,15 @@ describe('HttpExceptionFilter', () => {
   });
 
   it('When a platform error maps to a status, then it reuses its definition', () => {
-    const { host, response } = makeHost('/auth/login');
+    const { host, response } = makeHost('/users/me');
     const filter = new HttpExceptionFilter(logger as never);
 
-    filter.catch(new PlatformError('INVALID_CREDENTIALS'), host as never);
+    filter.catch(new PlatformError('UNAUTHORIZED'), host as never);
 
     expect(response.status).toHaveBeenCalledWith(HttpStatus.UNAUTHORIZED);
     expect(response.json).toHaveBeenCalledWith(
       expect.objectContaining({
-        code: 'INVALID_CREDENTIALS',
+        code: 'UNAUTHORIZED',
         statusCode: HttpStatus.UNAUTHORIZED,
       }),
     );

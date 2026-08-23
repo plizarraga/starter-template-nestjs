@@ -761,7 +761,6 @@ export const UserScalarFieldEnum = {
   email: 'email',
   emailVerified: 'emailVerified',
   image: 'image',
-  passwordHash: 'passwordHash',
   role: 'role',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -788,6 +787,7 @@ export const AccountScalarFieldEnum = {
   id: 'id',
   accountId: 'accountId',
   providerId: 'providerId',
+  issuer: 'issuer',
   userId: 'userId',
   accessToken: 'accessToken',
   refreshToken: 'refreshToken',

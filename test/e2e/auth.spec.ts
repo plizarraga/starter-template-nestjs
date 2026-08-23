@@ -29,13 +29,13 @@ describe('Better Auth authentication (e2e)', () => {
       `CREATE TYPE "${environment.schema}"."Role" AS ENUM ('USER', 'ADMIN')`,
     );
     await prisma.$executeRawUnsafe(
-      `CREATE TABLE "${environment.schema}"."user" ("id" TEXT PRIMARY KEY, "name" TEXT NOT NULL, "email" TEXT NOT NULL UNIQUE, "emailVerified" BOOLEAN NOT NULL DEFAULT false, "image" TEXT, "passwordHash" TEXT, "role" "${environment.schema}"."Role" NOT NULL DEFAULT 'USER', "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMPTZ NOT NULL)`,
+      `CREATE TABLE "${environment.schema}"."user" ("id" TEXT PRIMARY KEY, "name" TEXT NOT NULL, "email" TEXT NOT NULL UNIQUE, "emailVerified" BOOLEAN NOT NULL DEFAULT false, "image" TEXT, "role" "${environment.schema}"."Role" NOT NULL DEFAULT 'USER', "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMPTZ NOT NULL)`,
     );
     await prisma.$executeRawUnsafe(
       `CREATE TABLE "${environment.schema}"."session" ("id" TEXT PRIMARY KEY, "expiresAt" TIMESTAMPTZ NOT NULL, "token" TEXT NOT NULL UNIQUE, "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMPTZ NOT NULL, "ipAddress" TEXT, "userAgent" TEXT, "userId" TEXT NOT NULL REFERENCES "${environment.schema}"."user"("id") ON DELETE CASCADE)`,
     );
     await prisma.$executeRawUnsafe(
-      `CREATE TABLE "${environment.schema}"."account" ("id" TEXT PRIMARY KEY, "accountId" TEXT NOT NULL, "providerId" TEXT NOT NULL, "userId" TEXT NOT NULL REFERENCES "${environment.schema}"."user"("id") ON DELETE CASCADE, "accessToken" TEXT, "refreshToken" TEXT, "idToken" TEXT, "accessTokenExpiresAt" TIMESTAMPTZ, "refreshTokenExpiresAt" TIMESTAMPTZ, "scope" TEXT, "password" TEXT, "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMPTZ NOT NULL, UNIQUE("providerId", "accountId"))`,
+      `CREATE TABLE "${environment.schema}"."account" ("id" TEXT PRIMARY KEY, "accountId" TEXT NOT NULL, "providerId" TEXT NOT NULL, "issuer" TEXT NOT NULL, "userId" TEXT NOT NULL REFERENCES "${environment.schema}"."user"("id") ON DELETE CASCADE, "accessToken" TEXT, "refreshToken" TEXT, "idToken" TEXT, "accessTokenExpiresAt" TIMESTAMPTZ, "refreshTokenExpiresAt" TIMESTAMPTZ, "scope" TEXT, "password" TEXT, "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMPTZ NOT NULL, UNIQUE("issuer", "accountId"))`,
     );
     await prisma.$executeRawUnsafe(
       `CREATE TABLE "${environment.schema}"."verification" ("id" TEXT PRIMARY KEY, "identifier" TEXT NOT NULL, "value" TEXT NOT NULL, "expiresAt" TIMESTAMPTZ NOT NULL, "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMPTZ NOT NULL)`,
@@ -46,7 +46,6 @@ describe('Better Auth authentication (e2e)', () => {
       ...defaultEnvironment,
       DATABASE_SCHEMA: environment.schema,
       DATABASE_URL: environment.databaseUrl,
-      REDIS_URL: environment.redisUrl,
     };
     const { AppModule } =
       (await import('../../src/app.module')) as typeof import('../../src/app.module');

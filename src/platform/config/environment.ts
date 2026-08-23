@@ -8,11 +8,8 @@ export type Environment = {
   LOG_LEVEL: string;
   NODE_ENV: 'development' | 'production' | 'test';
   PORT: number;
-  REDIS_URL: string;
   RATE_LIMIT_LOGIN_MAX: number;
   RATE_LIMIT_LOGIN_TTL_SECONDS: number;
-  RATE_LIMIT_REFRESH_MAX: number;
-  RATE_LIMIT_REFRESH_TTL_SECONDS: number;
   RATE_LIMIT_REGISTER_MAX: number;
   RATE_LIMIT_REGISTER_TTL_SECONDS: number;
 };
@@ -35,16 +32,8 @@ const environmentSchema = Joi.object<Environment>({
   }),
   NODE_ENV: Joi.string().valid('development', 'production', 'test').required(),
   PORT: Joi.number().integer().port().default(3000),
-  REDIS_URL: Joi.string()
-    .uri({ scheme: ['redis', 'rediss'] })
-    .required(),
   RATE_LIMIT_LOGIN_MAX: Joi.number().integer().positive().default(10),
   RATE_LIMIT_LOGIN_TTL_SECONDS: Joi.number().integer().positive().default(900),
-  RATE_LIMIT_REFRESH_MAX: Joi.number().integer().positive().default(30),
-  RATE_LIMIT_REFRESH_TTL_SECONDS: Joi.number()
-    .integer()
-    .positive()
-    .default(900),
   RATE_LIMIT_REGISTER_MAX: Joi.number().integer().positive().default(5),
   RATE_LIMIT_REGISTER_TTL_SECONDS: Joi.number()
     .integer()

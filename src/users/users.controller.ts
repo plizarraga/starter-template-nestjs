@@ -11,7 +11,6 @@ import {
 } from '@nestjs/common';
 import { Role } from '../generated/prisma/client';
 import {
-  ApiBearerAuth,
   ApiConflictResponse,
   ApiForbiddenResponse,
   ApiNotFoundResponse,

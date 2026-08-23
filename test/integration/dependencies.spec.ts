@@ -12,17 +12,15 @@ describe('test dependencies', () => {
   }, 120_000);
 
   afterAll(async () => {
-    await environment.stop();
+    await environment?.stop();
   }, 120_000);
 
-  it('starts isolated PostgreSQL and Redis services', () => {
+  it('starts an isolated PostgreSQL service', () => {
     expect(environment.databaseUrl).toMatch(/^postgres(?:ql)?:/);
-    expect(environment.redisUrl).toMatch(/^redis:/);
-    expect(environment.redisNamespace).toMatch(/^test:[a-f0-9-]+:$/);
     expect(environment.schema).toMatch(/^test_[a-f0-9]+$/);
   });
 
-  it('creates a fresh PostgreSQL schema and Redis namespace', async () => {
+  it('creates a fresh PostgreSQL schema', async () => {
     await expect(environment.verifyIsolation()).resolves.toBe(true);
   });
 });

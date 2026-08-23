@@ -20,7 +20,6 @@ model User {
   email         String    @unique
   emailVerified Boolean   @default(false)
   image         String?
-  passwordHash  String?
   role          Role      @default(USER)
   createdAt     DateTime  @default(now()) @db.Timestamptz(6)
   updatedAt     DateTime  @updatedAt @db.Timestamptz(6)
@@ -49,6 +48,7 @@ model Account {
   id                    String    @id @default(uuid())
   accountId             String
   providerId            String
+  issuer                String
   userId                String
   user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   accessToken           String?
@@ -61,7 +61,7 @@ model Account {
   createdAt             DateTime  @default(now()) @db.Timestamptz(6)
   updatedAt             DateTime  @updatedAt @db.Timestamptz(6)
 
-  @@unique([providerId, accountId])
+  @@unique([issuer, accountId])
   @@index([userId])
   @@map("account")
 }

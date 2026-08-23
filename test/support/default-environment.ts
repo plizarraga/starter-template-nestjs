@@ -8,11 +8,8 @@ export const defaultEnvironment: NodeJS.ProcessEnv = {
   PORT: '3000',
   RATE_LIMIT_LOGIN_MAX: '1000',
   RATE_LIMIT_LOGIN_TTL_SECONDS: '900',
-  RATE_LIMIT_REFRESH_MAX: '1000',
-  RATE_LIMIT_REFRESH_TTL_SECONDS: '900',
   RATE_LIMIT_REGISTER_MAX: '1000',
   RATE_LIMIT_REGISTER_TTL_SECONDS: '3600',
-  REDIS_URL: 'redis://localhost:6379',
 };
 
 Object.assign(process.env, defaultEnvironment);

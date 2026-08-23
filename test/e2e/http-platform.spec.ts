@@ -188,7 +188,7 @@ describe('HTTP platform (e2e)', () => {
   it('When unrelated container configuration is present, then application configuration accepts it', () => {
     const environment = {
       ...process.env,
-      CONTAINER_PORT_6379_TCP: 'tcp://redis',
+      CONTAINER_METADATA: 'injected-by-container-runtime',
     };
 
     expect(() => validateEnvironment(environment)).not.toThrow();

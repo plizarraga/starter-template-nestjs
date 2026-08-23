@@ -11,43 +11,6 @@ const publicUser = {
 };
 
 describe('UsersRepository', () => {
-  it('When create fails with an unexpected error, then it rethrows it', async () => {
-    const prisma = {
-      user: { create: vi.fn().mockRejectedValue(new Error('db down')) },
-    };
-    const repository = new UsersRepository(prisma as never);
-
-    await expect(
-      repository.create({
-        email: 'reader@example.com',
-        passwordHash: 'hash',
-        role: Role.USER,
-      }),
-    ).rejects.toThrow('db down');
-  });
-
-  it('When create fails with a unique-constraint violation, then it maps to USER_EMAIL_ALREADY_EXISTS', async () => {
-    const prisma = {
-      user: {
-        create: vi.fn().mockRejectedValue(
-          new Prisma.PrismaClientKnownRequestError('unique', {
-            clientVersion: '6.0.0',
-            code: 'P2002',
-          }),
-        ),
-      },
-    };
-    const repository = new UsersRepository(prisma as never);
-
-    await expect(
-      repository.create({
-        email: 'reader@example.com',
-        passwordHash: 'hash',
-        role: Role.USER,
-      }),
-    ).rejects.toMatchObject({ code: 'USER_EMAIL_ALREADY_EXISTS' });
-  });
-
   it('When listing without a search, then it queries without a where filter', async () => {
     const prisma = {
       user: {
@@ -81,7 +44,9 @@ describe('UsersRepository', () => {
     const repository = new UsersRepository(prisma as never);
 
     await expect(
-      repository.transact((users) => users.updateEmail('user-1', 'x@y.com')),
+      repository.transact((users) =>
+        users.updateAdmin('user-1', { email: 'x@y.com' }),
+      ),
     ).rejects.toMatchObject({ code: 'USER_NOT_FOUND' });
   });
 

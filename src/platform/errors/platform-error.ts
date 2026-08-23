@@ -6,10 +6,6 @@ type ErrorDefinition = {
 };
 
 export const errorDefinitions = {
-  ACCESS_TOKEN_EXPIRED: {
-    message: 'Access token has expired',
-    statusCode: HttpStatus.UNAUTHORIZED,
-  },
   CANNOT_REMOVE_LAST_ADMIN: {
     message: 'This operation would leave zero administrators',
     statusCode: HttpStatus.CONFLICT,
@@ -26,37 +22,13 @@ export const errorDefinitions = {
     message: 'An unexpected error occurred',
     statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
   },
-  INVALID_ACCESS_TOKEN: {
-    message: 'Access token is invalid',
-    statusCode: HttpStatus.UNAUTHORIZED,
-  },
-  INVALID_CREDENTIALS: {
-    message: 'Credentials are invalid',
-    statusCode: HttpStatus.UNAUTHORIZED,
-  },
-  INVALID_REFRESH_TOKEN: {
-    message: 'Refresh token is invalid',
-    statusCode: HttpStatus.UNAUTHORIZED,
-  },
   NOT_FOUND: {
     message: 'Resource not found',
     statusCode: HttpStatus.NOT_FOUND,
   },
-  RATE_LIMIT_EXCEEDED: {
-    message: 'Too many requests',
-    statusCode: HttpStatus.TOO_MANY_REQUESTS,
-  },
-  REFRESH_TOKEN_EXPIRED: {
-    message: 'Refresh token has expired',
-    statusCode: HttpStatus.UNAUTHORIZED,
-  },
   SERVICE_UNAVAILABLE: {
     message: 'Required service is unavailable',
     statusCode: HttpStatus.SERVICE_UNAVAILABLE,
-  },
-  SESSION_NOT_FOUND: {
-    message: 'Session was not found',
-    statusCode: HttpStatus.UNAUTHORIZED,
   },
   UNAUTHORIZED: {
     message: 'Unauthorized',
