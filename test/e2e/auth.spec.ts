@@ -89,4 +89,46 @@ describe('Better Auth authentication (e2e)', () => {
         }),
       );
   });
+
+  it('When an active session reaches its renewal age, then a protected route renews its cookie', async () => {
+    await request(app.getHttpServer())
+      .post('/api/auth/sign-up/email')
+      .send({
+        name: 'Returning reader',
+        email: 'returning-reader@example.com',
+        password: 'password-123',
+      })
+      .expect(200);
+    const login = await request(app.getHttpServer())
+      .post('/api/auth/sign-in/email')
+      .send({
+        email: 'returning-reader@example.com',
+        password: 'password-123',
+      })
+      .expect(200);
+    const cookie = login.headers['set-cookie']?.[0] ?? '';
+    const prisma = new PrismaClient({
+      adapter: new PrismaPg(
+        { connectionString: environment.databaseUrl },
+        { schema: environment.schema },
+      ),
+    });
+    await prisma.session.updateMany({
+      data: { expiresAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000) },
+    });
+
+    const response = await request(app.getHttpServer())
+      .get('/users/me')
+      .set('Cookie', cookie)
+      .expect(200);
+    const renewedSession = await prisma.session.findFirst({
+      where: { expiresAt: { gt: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000) } },
+    });
+    await prisma.$disconnect();
+
+    expect(response.headers['set-cookie']).toEqual(
+      expect.arrayContaining([expect.stringContaining('better-auth.session_token=')]),
+    );
+    expect(renewedSession).not.toBeNull();
+  });
 });

@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { betterAuth } from 'better-auth';
 import { fromNodeHeaders, toNodeHandler } from 'better-auth/node';
-import type { Request, RequestHandler } from 'express';
+import type { Request, RequestHandler, Response } from 'express';
 import { Environment } from '../platform/config/environment';
 import { PrismaService } from '../platform/prisma/prisma.service';
 
@@ -46,9 +46,15 @@ export class BetterAuthService {
     return toNodeHandler(this.instance);
   }
 
-  getSession(request: Request) {
-    return this.instance.api.getSession({
+  async getSession(request: Request, response: Response) {
+    const result = await this.instance.api.getSession({
       headers: fromNodeHeaders(request.headers),
+      returnHeaders: true,
     });
+    const cookies = result.headers.getSetCookie();
+    if (cookies.length > 0) {
+      response.setHeader('set-cookie', cookies);
+    }
+    return result.response;
   }
 }

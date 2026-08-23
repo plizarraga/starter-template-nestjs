@@ -1,5 +1,5 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import { Role } from '../generated/prisma/client';
 import { PlatformError } from '../platform/errors/platform-error';
 import { UsersService } from '../users/users.service';
@@ -17,8 +17,10 @@ export class SessionGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
-    const session = await this.auth.getSession(request);
+    const http = context.switchToHttp();
+    const request = http.getRequest<AuthenticatedRequest>();
+    const response = http.getResponse<Response>();
+    const session = await this.auth.getSession(request, response);
     if (session === null) {
       throw new PlatformError('UNAUTHORIZED');
     }

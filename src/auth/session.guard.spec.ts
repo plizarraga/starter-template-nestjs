@@ -3,9 +3,12 @@ import { Role } from '../generated/prisma/client';
 import { describe, expect, it, vi } from 'vitest';
 import { SessionGuard } from './session.guard';
 
-function context(request: unknown): ExecutionContext {
+function context(request: unknown, response = {}): ExecutionContext {
   return {
-    switchToHttp: () => ({ getRequest: () => request }),
+    switchToHttp: () => ({
+      getRequest: () => request,
+      getResponse: () => response,
+    }),
   } as unknown as ExecutionContext;
 }
 
@@ -29,11 +32,13 @@ describe('SessionGuard', () => {
       findById: vi.fn().mockResolvedValue({ id: 'user-1', role: Role.ADMIN }),
     };
     const request = {};
+    const response = {};
     const guard = new SessionGuard(auth as never, users as never);
 
-    await expect(guard.canActivate(context(request))).resolves.toBe(true);
+    await expect(guard.canActivate(context(request, response))).resolves.toBe(true);
     expect(request).toMatchObject({
       principal: { id: 'user-1', role: Role.ADMIN },
     });
+    expect(auth.getSession).toHaveBeenCalledWith(request, response);
   });
 });
