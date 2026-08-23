@@ -32,13 +32,20 @@ describe('UsersRepository', () => {
     );
   });
 
-  it('When a transaction hits a missing record, then it maps to USER_NOT_FOUND', async () => {
+  it('When updating a missing user in a transaction, then it maps to USER_NOT_FOUND', async () => {
+    const transaction = {
+      user: {
+        update: vi.fn().mockRejectedValue(
+          new Prisma.PrismaClientKnownRequestError('not found', {
+            clientVersion: '6.0.0',
+            code: 'P2025',
+          }),
+        ),
+      },
+    };
     const prisma = {
-      $transaction: vi.fn().mockRejectedValue(
-        new Prisma.PrismaClientKnownRequestError('not found', {
-          clientVersion: '6.0.0',
-          code: 'P2025',
-        }),
+      $transaction: vi.fn((work: (transaction: unknown) => Promise<unknown>) =>
+        work(transaction),
       ),
     };
     const repository = new UsersRepository(prisma as never);
@@ -48,6 +55,41 @@ describe('UsersRepository', () => {
         users.updateAdmin('user-1', { email: 'x@y.com' }),
       ),
     ).rejects.toMatchObject({ code: 'USER_NOT_FOUND' });
+  });
+
+  it('When updating to a duplicate email in a transaction, then it maps to USER_EMAIL_ALREADY_EXISTS', async () => {
+    const transaction = {
+      user: {
+        update: vi.fn().mockRejectedValue(
+          new Prisma.PrismaClientKnownRequestError('duplicate email', {
+            clientVersion: '6.0.0',
+            code: 'P2002',
+          }),
+        ),
+      },
+    };
+    const prisma = {
+      $transaction: vi.fn((work: (transaction: unknown) => Promise<unknown>) =>
+        work(transaction),
+      ),
+    };
+    const repository = new UsersRepository(prisma as never);
+
+    await expect(
+      repository.transact((users) =>
+        users.updateAdmin('user-1', { email: 'reader@example.com' }),
+      ),
+    ).rejects.toMatchObject({ code: 'USER_EMAIL_ALREADY_EXISTS' });
+  });
+
+  it('When a transaction fails unexpectedly, then it preserves the original error', async () => {
+    const failure = new Error('database unavailable');
+    const prisma = {
+      $transaction: vi.fn().mockRejectedValue(failure),
+    };
+    const repository = new UsersRepository(prisma as never);
+
+    await expect(repository.transact(vi.fn())).rejects.toBe(failure);
   });
 
   it('When resolving the role of an existing user, then it returns it', async () => {

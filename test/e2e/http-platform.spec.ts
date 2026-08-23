@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { OpenAPIObject } from '@nestjs/swagger';
 import request from 'supertest';
 import { IsEmail } from 'class-validator';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -167,7 +168,7 @@ describe('HTTP platform (e2e)', () => {
     expect(raw).not.toContain('postgres');
   });
 
-  it('When the application is not in production, then its OpenAPI documentation is available', async () => {
+  it('When the application is not in production, then OpenAPI exposes user response contracts', async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -175,7 +176,37 @@ describe('HTTP platform (e2e)', () => {
     configureApplication(app);
     await app.init();
 
-    await request(app.getHttpServer()).get('/docs').expect(200);
+    const response = await request(app.getHttpServer())
+      .get('/docs-json')
+      .expect(200);
+    const document = response.body as OpenAPIObject;
+
+    expect(document.components?.schemas?.UserResponseDto).toMatchObject({
+      properties: {
+        createdAt: { format: 'date-time', type: 'string' },
+        email: { format: 'email', type: 'string' },
+        role: { enum: ['USER', 'ADMIN'], type: 'string' },
+        updatedAt: { format: 'date-time', type: 'string' },
+      },
+      required: ['id', 'email', 'role', 'createdAt', 'updatedAt'],
+      type: 'object',
+    });
+    expect(document.components?.schemas?.UserResponseDto).toMatchObject({
+      properties: { id: { example: 'user-id', type: 'string' } },
+    });
+    expect(
+      document.components?.schemas?.PaginatedUsersResponseDto,
+    ).toMatchObject({
+      properties: {
+        data: {
+          items: { $ref: '#/components/schemas/UserResponseDto' },
+          type: 'array',
+        },
+        meta: { $ref: '#/components/schemas/PaginationMetaDto' },
+      },
+      required: ['data', 'meta'],
+      type: 'object',
+    });
   });
 
   it('When a required configuration value is absent, then application initialization fails', () => {
