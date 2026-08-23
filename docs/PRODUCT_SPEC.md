@@ -48,12 +48,14 @@ For HTTP-based implementations, the canonical API surface is:
 ```text
 Authentication
 
-POST   /auth/register
-POST   /auth/login
-POST   /auth/refresh
-POST   /auth/logout
-POST   /auth/logout-all
-PATCH  /auth/password
+POST   /api/auth/sign-up/email
+POST   /api/auth/sign-in/email
+POST   /api/auth/sign-out
+
+Authentication uses Better Auth's native HTTP API and response/error shapes.
+Sessions are transported as HTTP-only cookies. The native API owns password
+changes, session renewal, and session revocation; the starter does not expose
+a JWT or refresh-token compatibility layer.
 
 
 Users

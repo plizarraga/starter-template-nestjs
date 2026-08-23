@@ -5,7 +5,7 @@ import { configureApplication } from './configure-application';
 function makeApp(config: { getOrThrow: (key: string) => unknown }) {
   return {
     enableCors: vi.fn(),
-    get: vi.fn().mockReturnValue(config),
+    get: vi.fn().mockReturnValue({ ...config, handler: vi.fn() }),
     set: vi.fn(),
     use: vi.fn(),
     useGlobalFilters: vi.fn(),

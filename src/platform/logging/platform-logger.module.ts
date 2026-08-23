@@ -5,6 +5,7 @@ import { RequestWithId } from '../request-id/request-id.middleware';
 const redactedPaths = [
   'accessToken',
   'authorization',
+  'BETTER_AUTH_SECRET',
   'cookie',
   'currentPassword',
   'DATABASE_URL',
@@ -22,6 +23,7 @@ const redactedPaths = [
   'req.body.password',
   'req.body.passwordHash',
   'req.body.refreshToken',
+  'req.body.token',
   'req.headers.authorization',
   'req.headers.cookie',
   '*.accessToken',
@@ -31,6 +33,7 @@ const redactedPaths = [
   '*.passwordHash',
   '*.refreshCredential',
   '*.refreshToken',
+  '*.token',
 ];
 
 export const pinoRedaction = {

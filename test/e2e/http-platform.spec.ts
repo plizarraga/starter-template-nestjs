@@ -180,9 +180,9 @@ describe('HTTP platform (e2e)', () => {
 
   it('When a required configuration value is absent, then application initialization fails', () => {
     const environment = { ...process.env };
-    delete environment.JWT_SECRET;
+    delete environment.BETTER_AUTH_SECRET;
 
-    expect(() => validateEnvironment(environment)).toThrow('JWT_SECRET');
+    expect(() => validateEnvironment(environment)).toThrow('BETTER_AUTH_SECRET');
   });
 
   it('When unrelated container configuration is present, then application configuration accepts it', () => {

@@ -17,10 +17,9 @@ microservices.
 | Runtime                       | Node.js 24 LTS, TypeScript, NestJS 11                                            |
 | Architecture                  | Modular monolith using conventional Nest controllers, services, and repositories |
 | Persistent data               | PostgreSQL accessed through Prisma                                               |
-| Session state and rate limits | Redis accessed through an encapsulated `ioredis` module                          |
-| Access credentials            | HS256 JWTs, verified locally with `@nestjs/jwt`                                  |
-| Refresh credentials           | Opaque `sessionId.secret` cookie, stored only as an HMAC in Redis                |
-| Password hashing              | `argon2id` via the `argon2` package                                              |
+| Session state                 | Better Auth sessions stored in PostgreSQL through Prisma                          |
+| Authentication                | Better Auth native email/password routes and rolling HTTP-only session cookies    |
+| Rate limits                   | Better Auth's native route rate limiter                                           |
 | HTTP validation               | DTOs using `class-validator` and `class-transformer`                             |
 | Configuration                 | `@nestjs/config` with Joi validation at startup                                  |
 | Logging                       | JSON logs through `nestjs-pino` and Pino                                         |
@@ -40,13 +39,8 @@ src/
   app.module.ts
   auth/
     auth.module.ts
-    auth.controller.ts
-    auth.service.ts
-    auth-session.repository.ts       # Redis-backed session access
-    access-token.service.ts          # JWT issuing and verification
-    access-token.guard.ts
-    password.service.ts
-    dto/
+    better-auth.service.ts           # Better Auth configuration and native handler
+    session.guard.ts                 # Session-to-application-principal bridge
     guards/
     decorators/
   users/
@@ -223,7 +217,27 @@ rather than executing Redis commands throughout the codebase.
 
 ## 7. Authentication and Authorization
 
-### 7.1 Access tokens
+### 7.1 Better Auth sessions
+
+Better Auth is mounted at `/api/auth` before Nest's JSON parser, so its native
+email/password endpoints own their request validation, response shapes, rate
+limits, and session cookies. `emailAndPassword` is enabled, `trustedOrigins`
+comes from `CORS_ORIGINS`, and the session lifetime is seven days with a
+one-day rolling-update interval. Better Auth's cookie defaults are HTTP-only,
+SameSite=Lax, and Secure for HTTPS/production deployments.
+
+Starter-owned `/users` endpoints use `SessionGuard`. It obtains the Better Auth
+session from the request cookie, then loads the application role from the same
+user record before `RolesGuard` authorizes the request. This is deliberately
+not a second authentication protocol.
+
+### 7.2 Retired JWT contract
+
+The previous JWT access token and rotating Redis refresh-token implementation
+has been removed. `JWT_*`, refresh-token settings, and `/auth/*` custom routes
+have no compatibility guarantee.
+
+### 7.3 Historical design
 
 `@nestjs/jwt` signs and verifies HS256 access tokens. The payload is limited to:
 

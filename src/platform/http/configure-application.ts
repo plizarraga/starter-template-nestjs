@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
+import { json, urlencoded } from 'express';
+import { BetterAuthService } from '../../auth/better-auth.service';
 import { Logger } from 'nestjs-pino';
 import { Environment } from '../config/environment';
 import { HttpExceptionFilter } from '../errors/http-exception.filter';
@@ -18,6 +20,9 @@ export function configureApplication(app: NestExpressApplication): void {
   app.set('trust proxy', 1);
   app.use(requestIdMiddleware);
   app.use(helmet());
+  app.use('/api/auth', app.get(BetterAuthService).handler());
+  app.use(json());
+  app.use(urlencoded({ extended: true }));
   app.enableCors({ credentials: true, origin: origins });
   app.useGlobalPipes(
     new ValidationPipe({

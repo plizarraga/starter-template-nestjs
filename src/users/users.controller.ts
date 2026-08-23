@@ -19,28 +19,22 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { AccessTokenGuard } from '../auth/access-token.guard';
-import type { AuthenticatedRequest } from '../auth/access-token.guard';
-import { AuthService } from '../auth/auth.service';
+import type { AuthenticatedRequest } from '../auth/session.guard';
+import { SessionGuard } from '../auth/session.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { PlatformError } from '../platform/errors/platform-error';
 import { AdminUpdateUserDto } from './dto/admin-update-user.dto';
 import { ListUsersQueryDto } from './dto/list-users-query.dto';
 import { PaginatedUsersResponseDto } from './dto/paginated-users-response.dto';
-import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { UsersService } from './users.service';
 
 @ApiTags('users')
-@ApiBearerAuth('access-token')
 @Controller('users')
-@UseGuards(AccessTokenGuard)
+@UseGuards(SessionGuard)
 export class UsersController {
-  constructor(
-    private readonly auth: AuthService,
-    private readonly users: UsersService,
-  ) {}
+  constructor(private readonly users: UsersService) {}
 
   @ApiOperation({ summary: 'Get the current user profile' })
   @ApiOkResponse({
@@ -56,19 +50,6 @@ export class UsersController {
       throw new PlatformError('USER_NOT_FOUND');
     }
     return user;
-  }
-
-  @ApiOperation({ summary: 'Update the current user email' })
-  @ApiOkResponse({
-    description: 'The updated profile. All refresh sessions are revoked.',
-    type: UserResponseDto,
-  })
-  @Patch('me')
-  updateProfile(
-    @Req() request: AuthenticatedRequest,
-    @Body() profile: UpdateProfileDto,
-  ) {
-    return this.auth.updateProfile(this.principal(request).id, profile);
   }
 
   @UseGuards(RolesGuard)

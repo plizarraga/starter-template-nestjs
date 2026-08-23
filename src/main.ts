@@ -7,6 +7,7 @@ import { configureApplication } from './platform/http/configure-application';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bodyParser: false,
     bufferLogs: true,
   });
   configureApplication(app);
