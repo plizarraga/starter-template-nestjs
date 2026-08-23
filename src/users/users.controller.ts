@@ -3,7 +3,6 @@ import {
   Controller,
   Get,
   Param,
-  ParseUUIDPipe,
   Patch,
   Query,
   Req,
@@ -74,7 +73,7 @@ export class UsersController {
   @ApiForbiddenResponse({ description: 'Requires the ADMIN role.' })
   @ApiNotFoundResponse({ description: 'User was not found (USER_NOT_FOUND).' })
   @Get(':id')
-  async getById(@Param('id', new ParseUUIDPipe()) id: string) {
+  async getById(@Param('id') id: string) {
     const user = await this.users.findPublicById(id);
     if (user === null) {
       throw new PlatformError('USER_NOT_FOUND');
@@ -98,7 +97,7 @@ export class UsersController {
   @Patch(':id')
   updateAdmin(
     @Req() request: AuthenticatedRequest,
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param('id') id: string,
     @Body() patch: AdminUpdateUserDto,
   ) {
     return this.users.updateAdmin(this.principal(request).id, id, patch);

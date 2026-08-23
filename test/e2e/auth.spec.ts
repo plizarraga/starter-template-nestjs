@@ -214,4 +214,73 @@ describe('Better Auth authentication (e2e)', () => {
       .set('Cookie', promotedCookie)
       .expect(200);
   });
+
+  it('When an administrator updates another user, then it can promote and demote that user but cannot demote itself', async () => {
+    const adminEmail = 'patch-administrator@example.com';
+    const targetEmail = 'patch-target@example.com';
+    await Promise.all(
+      [
+        { email: adminEmail, name: 'Patch administrator' },
+        { email: targetEmail, name: 'Patch target' },
+      ].map(({ email, name }) =>
+        request(app.getHttpServer())
+          .post('/api/auth/sign-up/email')
+          .send({ name, email, password: 'password-123' })
+          .expect(200),
+      ),
+    );
+
+    const prisma = new PrismaClient({
+      adapter: new PrismaPg(
+        { connectionString: environment.databaseUrl },
+        { schema: environment.schema },
+      ),
+    });
+    const [admin, target] = await Promise.all([
+      prisma.user.update({
+        data: { role: 'ADMIN' },
+        where: { email: adminEmail },
+      }),
+      prisma.user.findUniqueOrThrow({ where: { email: targetEmail } }),
+    ]);
+    await prisma.$disconnect();
+
+    const login = await request(app.getHttpServer())
+      .post('/api/auth/sign-in/email')
+      .send({ email: adminEmail, password: 'password-123' })
+      .expect(200);
+    const adminCookie = login.headers['set-cookie']?.[0] ?? '';
+
+    await request(app.getHttpServer())
+      .patch(`/users/${target.id}`)
+      .set('Cookie', adminCookie)
+      .send({ role: 'ADMIN' })
+      .expect(200)
+      .expect(({ body }: { body: { role: string } }) =>
+        expect(body.role).toBe('ADMIN'),
+      );
+    await request(app.getHttpServer())
+      .get(`/users/${target.id}`)
+      .set('Cookie', adminCookie)
+      .expect(200)
+      .expect(({ body }: { body: { email: string; role: string } }) =>
+        expect(body).toMatchObject({ email: targetEmail, role: 'ADMIN' }),
+      );
+    await request(app.getHttpServer())
+      .patch(`/users/${target.id}`)
+      .set('Cookie', adminCookie)
+      .send({ role: 'USER' })
+      .expect(200)
+      .expect(({ body }: { body: { role: string } }) =>
+        expect(body.role).toBe('USER'),
+      );
+    await request(app.getHttpServer())
+      .patch(`/users/${admin.id}`)
+      .set('Cookie', adminCookie)
+      .send({ role: 'USER' })
+      .expect(409)
+      .expect(({ body }: { body: { code: string } }) =>
+        expect(body.code).toBe('CANNOT_REMOVE_OWN_ADMIN_ROLE'),
+      );
+  });
 });

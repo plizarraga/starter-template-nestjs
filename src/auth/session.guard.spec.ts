@@ -41,4 +41,18 @@ describe('SessionGuard', () => {
     });
     expect(auth.getSession).toHaveBeenCalledWith(request, response);
   });
+
+  it('When Better Auth validates a session for a deleted user, then it rejects the request as unauthenticated', async () => {
+    const auth = {
+      getSession: vi.fn().mockResolvedValue({ user: { id: 'deleted-user' } }),
+    };
+    const users = { findById: vi.fn().mockResolvedValue(null) };
+    const request = {};
+    const guard = new SessionGuard(auth as never, users as never);
+
+    await expect(guard.canActivate(context(request))).rejects.toMatchObject({
+      code: 'UNAUTHORIZED',
+    });
+    expect(request).not.toHaveProperty('principal');
+  });
 });
