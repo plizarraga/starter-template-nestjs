@@ -26,6 +26,7 @@ import { AdminUpdateUserDto } from './dto/admin-update-user.dto';
 import { ListUsersQueryDto } from './dto/list-users-query.dto';
 import { PaginatedUsersResponseDto } from './dto/paginated-users-response.dto';
 import { UserResponseDto } from './dto/user-response.dto';
+import { ParseUserIdPipe } from './pipes/parse-user-id.pipe';
 import { UsersService } from './users.service';
 
 @ApiTags('users')
@@ -73,7 +74,7 @@ export class UsersController {
   @ApiForbiddenResponse({ description: 'Requires the ADMIN role.' })
   @ApiNotFoundResponse({ description: 'User was not found (USER_NOT_FOUND).' })
   @Get(':id')
-  async getById(@Param('id') id: string) {
+  async getById(@Param('id', ParseUserIdPipe) id: string) {
     const user = await this.users.findPublicById(id);
     if (user === null) {
       throw new PlatformError('USER_NOT_FOUND');
@@ -97,7 +98,7 @@ export class UsersController {
   @Patch(':id')
   updateAdmin(
     @Req() request: AuthenticatedRequest,
-    @Param('id') id: string,
+    @Param('id', ParseUserIdPipe) id: string,
     @Body() patch: AdminUpdateUserDto,
   ) {
     return this.users.updateAdmin(this.principal(request).id, id, patch);
