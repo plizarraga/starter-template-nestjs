@@ -1,7 +1,11 @@
 import { HttpStatus, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import {
+  DocumentBuilder,
+  SwaggerModule,
+  type OpenAPIObject,
+} from '@nestjs/swagger';
 import helmet from 'helmet';
 import { json, urlencoded } from 'express';
 import { BetterAuthService } from '../../auth/better-auth.service';
@@ -10,7 +14,9 @@ import { Environment } from '../config/environment';
 import { HttpExceptionFilter } from '../errors/http-exception.filter';
 import { requestIdMiddleware } from '../request-id/request-id.middleware';
 
-export function configureApplication(app: NestExpressApplication): void {
+export async function configureApplication(
+  app: NestExpressApplication,
+): Promise<void> {
   const config = app.get(ConfigService<Environment, true>);
   const origins = config
     .getOrThrow<string>('CORS_ORIGINS')
@@ -20,7 +26,8 @@ export function configureApplication(app: NestExpressApplication): void {
   app.set('trust proxy', 1);
   app.use(requestIdMiddleware);
   app.use(helmet());
-  app.use('/api/auth', app.get(BetterAuthService).handler());
+  const authService = app.get(BetterAuthService);
+  app.use('/api/auth', authService.handler());
   app.use(json());
   app.use(urlencoded({ extended: true }));
   app.enableCors({ credentials: true, origin: origins });
@@ -50,6 +57,31 @@ export function configureApplication(app: NestExpressApplication): void {
         .addTag('users', 'Profile and user administration (RBAC)')
         .build(),
     );
+
+    const documentedAuthPaths = new Set([
+      '/sign-up/email',
+      '/sign-in/email',
+      '/sign-out',
+      '/get-session',
+    ]);
+    const authSchema = await authService.generateOpenApiSchema();
+    for (const [path, item] of Object.entries(authSchema.paths ?? {})) {
+      if (!documentedAuthPaths.has(path)) {
+        continue;
+      }
+      for (const operation of Object.values(
+        item as Record<string, { tags?: string[] }>,
+      )) {
+        operation.tags = ['auth'];
+      }
+      document.paths[`/api/auth${path}`] =
+        item as OpenAPIObject['paths'][string];
+    }
+    Object.assign(
+      document.components?.schemas ?? {},
+      authSchema.components?.schemas,
+    );
+
     SwaggerModule.setup('docs', app, document);
   }
 }

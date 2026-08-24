@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { betterAuth } from 'better-auth';
 import { fromNodeHeaders, toNodeHandler } from 'better-auth/node';
+import { openAPI } from 'better-auth/plugins';
 import type { Request, RequestHandler, Response } from 'express';
 import { Role } from '../generated/prisma/client';
 import { Environment } from '../platform/config/environment';
@@ -39,6 +40,7 @@ function createAuthInstance(
     },
     secret: config.getOrThrow<string>('BETTER_AUTH_SECRET'),
     trustedOrigins: origins,
+    plugins: [openAPI()],
     user: {
       additionalFields: {
         role: {
@@ -62,6 +64,10 @@ export class BetterAuthService {
 
   handler(): RequestHandler {
     return toNodeHandler(this.instance);
+  }
+
+  generateOpenApiSchema() {
+    return this.instance.api.generateOpenAPISchema();
   }
 
   async getSession(request: Request, response: Response) {

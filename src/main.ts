@@ -10,7 +10,7 @@ async function bootstrap() {
     bodyParser: false,
     bufferLogs: true,
   });
-  configureApplication(app);
+  await configureApplication(app);
   const config = app.get(ConfigService<Environment, true>);
 
   await app.listen(config.getOrThrow('PORT'));

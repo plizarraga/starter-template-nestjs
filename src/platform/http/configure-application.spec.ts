@@ -5,7 +5,13 @@ import { configureApplication } from './configure-application';
 function makeApp(config: { getOrThrow: (key: string) => unknown }) {
   return {
     enableCors: vi.fn(),
-    get: vi.fn().mockReturnValue({ ...config, handler: vi.fn() }),
+    get: vi.fn().mockReturnValue({
+      ...config,
+      generateOpenApiSchema: vi
+        .fn()
+        .mockResolvedValue({ components: { schemas: {} }, paths: {} }),
+      handler: vi.fn(),
+    }),
     set: vi.fn(),
     use: vi.fn(),
     useGlobalFilters: vi.fn(),
@@ -14,7 +20,7 @@ function makeApp(config: { getOrThrow: (key: string) => unknown }) {
 }
 
 describe('configureApplication', () => {
-  it('When running in production, then it skips the Swagger setup', () => {
+  it('When running in production, then it skips the Swagger setup', async () => {
     const createDocument = vi
       .spyOn(SwaggerModule, 'createDocument')
       .mockReturnValue({} as never);
@@ -28,7 +34,7 @@ describe('configureApplication', () => {
             : undefined,
     };
 
-    configureApplication(makeApp(config) as never);
+    await configureApplication(makeApp(config) as never);
 
     expect(createDocument).not.toHaveBeenCalled();
     expect(setup).not.toHaveBeenCalled();
@@ -36,10 +42,10 @@ describe('configureApplication', () => {
     setup.mockRestore();
   });
 
-  it('When not in production, then it sets up Swagger at /docs', () => {
+  it('When not in production, then it sets up Swagger at /docs', async () => {
     const createDocument = vi
       .spyOn(SwaggerModule, 'createDocument')
-      .mockReturnValue({} as never);
+      .mockReturnValue({ components: { schemas: {} }, paths: {} } as never);
     const setup = vi.spyOn(SwaggerModule, 'setup').mockImplementation(() => {});
     const config = {
       getOrThrow: (key: string) =>
@@ -50,7 +56,7 @@ describe('configureApplication', () => {
             : undefined,
     };
 
-    configureApplication(makeApp(config) as never);
+    await configureApplication(makeApp(config) as never);
 
     expect(createDocument).toHaveBeenCalled();
     expect(setup).toHaveBeenCalledWith(
