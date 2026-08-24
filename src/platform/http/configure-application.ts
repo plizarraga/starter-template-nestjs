@@ -44,6 +44,7 @@ export function configureApplication(app: NestExpressApplication): void {
             'Native authentication routes are mounted at /api/auth.',
         )
         .setVersion('1.0')
+        .addCookieAuth('better-auth.session_token')
         .addTag('health', 'Liveness and readiness probes')
         .addTag('auth', 'Native Better Auth authentication')
         .addTag('users', 'Profile and user administration (RBAC)')

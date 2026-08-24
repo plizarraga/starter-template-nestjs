@@ -58,6 +58,17 @@ describe('configureApplication', () => {
       expect.anything(),
       expect.anything(),
     );
+    expect(createDocument.mock.calls[0]?.[1]).toMatchObject({
+      components: {
+        securitySchemes: {
+          cookie: {
+            in: 'cookie',
+            name: 'better-auth.session_token',
+            type: 'apiKey',
+          },
+        },
+      },
+    });
     createDocument.mockRestore();
     setup.mockRestore();
   });
