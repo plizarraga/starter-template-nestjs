@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { betterAuth } from 'better-auth';
 import { fromNodeHeaders, toNodeHandler } from 'better-auth/node';
 import type { Request, RequestHandler, Response } from 'express';
+import { Role } from '../generated/prisma/client';
 import { Environment } from '../platform/config/environment';
 import { PrismaService } from '../platform/prisma/prisma.service';
 
@@ -38,6 +39,16 @@ function createAuthInstance(
     },
     secret: config.getOrThrow<string>('BETTER_AUTH_SECRET'),
     trustedOrigins: origins,
+    user: {
+      additionalFields: {
+        role: {
+          type: Object.values(Role) as [string, ...string[]],
+          required: false,
+          defaultValue: Role.USER,
+          input: false,
+        },
+      },
+    },
   });
 }
 

@@ -74,14 +74,27 @@ describe('Better Auth authentication (e2e)', () => {
         name: 'Reader',
         email: 'reader@example.com',
         password: 'password-123',
+        role: 'ADMIN',
       })
-      .expect(200);
+      .expect(200)
+      .expect(({ body }) =>
+        expect(body).toMatchObject({ user: { role: 'USER' } }),
+      );
     const login = await request(app.getHttpServer())
       .post('/api/auth/sign-in/email')
       .send({ email: 'reader@example.com', password: 'password-123' })
       .expect(200);
     const cookie = login.headers['set-cookie']?.[0] ?? '';
     expect(cookie).toContain('HttpOnly');
+    await request(app.getHttpServer())
+      .get('/api/auth/get-session')
+      .set('Cookie', cookie)
+      .expect(200)
+      .expect(({ body }) =>
+        expect(body).toMatchObject({
+          user: { email: 'reader@example.com', role: 'USER' },
+        }),
+      );
     await request(app.getHttpServer())
       .get('/users/me')
       .set('Cookie', cookie)
