@@ -85,3 +85,15 @@ Issues and specifications use GitHub through `gh`; see
 `docs/agents/issue-tracker.md`. Project #1 is the execution board: move an
 active issue to `In Progress` before changing code, move it to `Done` after
 acceptance verification, then close it.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs live as GitHub issues, managed via the `gh` CLI. See
+`docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context layout: `CONTEXT.md` and `docs/adr/` at the repo root. See
+`docs/agents/domain.md`.
