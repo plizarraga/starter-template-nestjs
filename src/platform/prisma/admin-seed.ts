@@ -1,6 +1,8 @@
 import { hashPassword } from 'better-auth/crypto';
 import { randomUUID } from 'node:crypto';
 
+type SeedRole = 'ADMIN' | 'USER';
+
 type AdminSeedClient = {
   account: {
     upsert(input: {
@@ -25,9 +27,9 @@ type AdminSeedClient = {
         emailVerified: false;
         id: string;
         name: string;
-        role: 'ADMIN';
+        role: SeedRole;
       };
-      update: { role: 'ADMIN' };
+      update: { role: SeedRole };
       where: { email: string };
     }): Promise<{ id: string }>;
   };
@@ -38,6 +40,7 @@ export async function seedAdmin(
   email: string,
   password: string,
   hash: (value: string) => Promise<string> = hashPassword,
+  role: SeedRole = 'ADMIN',
 ): Promise<void> {
   const normalizedEmail = email.trim().toLowerCase();
   const passwordDigest = await hash(password);
@@ -48,9 +51,9 @@ export async function seedAdmin(
       emailVerified: false,
       id: userId,
       name: normalizedEmail,
-      role: 'ADMIN',
+      role,
     },
-    update: { role: 'ADMIN' },
+    update: { role },
     where: { email: normalizedEmail },
   });
   await client.account.upsert({

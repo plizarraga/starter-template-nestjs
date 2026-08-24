@@ -102,4 +102,31 @@ describe('seedAdmin', () => {
     expect(userUpsert).toHaveBeenCalledOnce();
     expect(accountUpsert).toHaveBeenCalledOnce();
   });
+
+  it('seeds a regular user when role is USER', async () => {
+    const userUpsert = vi.fn<Parameters<typeof seedAdmin>[0]['user']['upsert']>(
+      ({ create, update }) => {
+        expect(create.role).toBe('USER');
+        expect(update).toEqual({ role: 'USER' });
+        return Promise.resolve({ id: 'user-id' });
+      },
+    );
+    const accountUpsert = vi.fn<
+      Parameters<typeof seedAdmin>[0]['account']['upsert']
+    >(() => Promise.resolve());
+
+    await seedAdmin(
+      {
+        account: { upsert: accountUpsert },
+        user: { upsert: userUpsert },
+      },
+      'user@example.com',
+      'secure-password',
+      vi.fn().mockResolvedValue('encoded-password'),
+      'USER',
+    );
+
+    expect(userUpsert).toHaveBeenCalledOnce();
+    expect(accountUpsert).toHaveBeenCalledOnce();
+  });
 });

@@ -59,6 +59,7 @@ the local values; production receives real values from the deployment platform.
 | `RATE_LIMIT_REGISTER_*` | Better Auth native sign-up limit override |
 | `RATE_LIMIT_LOGIN_*` | Better Auth native sign-in limit override |
 | `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` | Required only by `seed:admin` |
+| `SEED_USER_EMAIL`, `SEED_USER_PASSWORD` | Required only by `seed:user` |
 
 ## 5. HTTP Platform
 
@@ -94,4 +95,6 @@ migrations with `pnpm prisma:migrate`, and starts Nest with `pnpm start:dev`.
 Production deployment applies committed migrations through `pnpm prisma:deploy`
 before starting application replicas. Run `pnpm seed:admin` explicitly with
 `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` to create or promote the first
-administrator. The application never applies migrations at startup.
+administrator. Run `pnpm seed:user` with `SEED_USER_EMAIL` and
+`SEED_USER_PASSWORD` to create or promote a regular user the same way. The
+application never applies migrations at startup.

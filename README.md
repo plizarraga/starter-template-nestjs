@@ -42,6 +42,12 @@ Create or promote the first administrator when needed:
 SEED_ADMIN_EMAIL=admin@example.com SEED_ADMIN_PASSWORD=change-me-now pnpm seed:admin
 ```
 
+Create or promote a regular user the same way:
+
+```bash
+SEED_USER_EMAIL=user@example.com SEED_USER_PASSWORD=change-me-now pnpm seed:user
+```
+
 ## Authentication
 
 Better Auth owns authentication at `/api/auth`. A browser signs up and signs in
@@ -94,6 +100,8 @@ from its deployment platform; `.env` is not loaded with `NODE_ENV=production`.
 | `RATE_LIMIT_LOGIN_TTL_SECONDS` | No | Sign-in limit window in seconds; defaults to `900`. |
 | `SEED_ADMIN_EMAIL` | Seed only | Administrator email for `pnpm seed:admin`. |
 | `SEED_ADMIN_PASSWORD` | Seed only | Administrator password for `pnpm seed:admin`. |
+| `SEED_USER_EMAIL` | Seed only | Regular user email for `pnpm seed:user`. |
+| `SEED_USER_PASSWORD` | Seed only | Regular user password for `pnpm seed:user`. |
 
 ## Commands
 

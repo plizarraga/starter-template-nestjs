@@ -113,7 +113,9 @@ substring. List responses use:
 required. `PORT`, `DATABASE_SCHEMA`, log level, and Better Auth route limits
 have defaults. `pnpm seed:admin` reads `SEED_ADMIN_EMAIL` and
 `SEED_ADMIN_PASSWORD`, creates an account if absent, or promotes the matching
-account without creating a duplicate.
+account without creating a duplicate. `pnpm seed:user` does the same with
+`SEED_USER_EMAIL` and `SEED_USER_PASSWORD`, creating or promoting a regular
+user instead of an administrator.
 
 ## 7. Verification Contract
 
