@@ -15,6 +15,7 @@ Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all o
 
 Project #1 (`starter-template-nestjs`) is the canonical execution board.
 
+- Newly opened and reopened repository issues are added to Project #1 automatically with `Todo` status. Do not add them manually unless the workflow failed; diagnose and rerun the workflow instead.
 - A standalone spec tracks its own authoring lifecycle: move it to `In Progress` while it is drafted and reviewed, then to `Done` when approved. It does not wait for implementation tickets.
 - An epic tracks delivery: move it to `In Progress` while any sub-issue is active, and to `Done` only when every sub-issue is complete. Use GitHub-native sub-issues so its progress is visible on the board.
 - Before changing code for a feature, task, or bug ticket, move its card from `Todo` to `In Progress`.

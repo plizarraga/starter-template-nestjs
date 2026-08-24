@@ -1,0 +1,25 @@
+name: Add issues to project
+
+on:
+  issues:
+    types: [opened, reopened]
+
+permissions: {}
+
+jobs:
+  add-to-project:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add issue to Kanban
+        uses: actions/add-to-project@v1.0.2
+        with:
+          project-url: https://github.com/users/plizarraga/projects/1
+          github-token: ${{ secrets.PROJECTS_TOKEN }}
+
+      - name: Set initial status
+        env:
+          GH_TOKEN: ${{ secrets.PROJECTS_TOKEN }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+        run: >-
+          gh project item-edit 1 --owner plizarraga --url "$ISSUE_URL"
+          --field Status --value Todo
