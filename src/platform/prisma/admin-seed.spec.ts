@@ -22,7 +22,7 @@ describe('seedAdmin', () => {
       expect(create.password).toBe('encoded-password');
       expect(create.providerId).toBe('credential');
       expect(create.userId).toBe('admin-id');
-      expect(update).toEqual({});
+      expect(update).toEqual({ password: 'encoded-password' });
       expect(where).toEqual({
         issuer_accountId: {
           accountId: 'admin-id',
@@ -47,11 +47,11 @@ describe('seedAdmin', () => {
     expect(accountUpsert).toHaveBeenCalledOnce();
   });
 
-  it('promotes an existing user without resetting its credential', async () => {
+  it('promotes an existing user and rotates its credential', async () => {
     const accountUpsert = vi.fn<
       Parameters<typeof seedAdmin>[0]['account']['upsert']
     >(({ update }) => {
-      expect(update).toEqual({});
+      expect(update).toEqual({ password: 'encoded-password' });
       return Promise.resolve();
     });
     const userUpsert = vi.fn<Parameters<typeof seedAdmin>[0]['user']['upsert']>(
@@ -75,11 +75,11 @@ describe('seedAdmin', () => {
     expect(accountUpsert).toHaveBeenCalledOnce();
   });
 
-  it('does not duplicate an existing administrator or credential', async () => {
+  it('does not duplicate an existing administrator when re-seeding', async () => {
     const accountUpsert = vi.fn<
       Parameters<typeof seedAdmin>[0]['account']['upsert']
     >(({ update }) => {
-      expect(update).toEqual({});
+      expect(update).toEqual({ password: 'encoded-password' });
       return Promise.resolve();
     });
     const userUpsert = vi.fn<Parameters<typeof seedAdmin>[0]['user']['upsert']>(

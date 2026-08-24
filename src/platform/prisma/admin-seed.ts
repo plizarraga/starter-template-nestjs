@@ -12,7 +12,7 @@ type AdminSeedClient = {
         providerId: 'credential';
         userId: string;
       };
-      update: Record<string, never>;
+      update: { password: string };
       where: {
         issuer_accountId: { accountId: string; issuer: string };
       };
@@ -62,7 +62,7 @@ export async function seedAdmin(
       providerId: 'credential',
       userId: user.id,
     },
-    update: {},
+    update: { password: passwordDigest },
     where: {
       issuer_accountId: {
         accountId: user.id,
