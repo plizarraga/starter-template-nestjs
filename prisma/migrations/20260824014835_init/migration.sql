@@ -1,12 +1,21 @@
-ALTER TABLE "User" RENAME TO "user";
+-- CreateEnum
+CREATE TYPE "Role" AS ENUM ('USER', 'ADMIN');
 
-ALTER TABLE "user"
-    ALTER COLUMN "id" TYPE TEXT USING "id"::text,
-    ADD COLUMN "name" TEXT NOT NULL DEFAULT '',
-    ADD COLUMN "emailVerified" BOOLEAN NOT NULL DEFAULT false,
-    ADD COLUMN "image" TEXT,
-    ALTER COLUMN "passwordHash" DROP NOT NULL;
+-- CreateTable
+CREATE TABLE "user" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "emailVerified" BOOLEAN NOT NULL DEFAULT false,
+    "image" TEXT,
+    "role" "Role" NOT NULL DEFAULT 'USER',
+    "createdAt" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMPTZ(6) NOT NULL,
 
+    CONSTRAINT "user_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "session" (
     "id" TEXT NOT NULL,
     "expiresAt" TIMESTAMPTZ(6) NOT NULL,
@@ -20,10 +29,12 @@ CREATE TABLE "session" (
     CONSTRAINT "session_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
 CREATE TABLE "account" (
     "id" TEXT NOT NULL,
     "accountId" TEXT NOT NULL,
     "providerId" TEXT NOT NULL,
+    "issuer" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "accessToken" TEXT,
     "refreshToken" TEXT,
@@ -38,6 +49,7 @@ CREATE TABLE "account" (
     CONSTRAINT "account_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
 CREATE TABLE "verification" (
     "id" TEXT NOT NULL,
     "identifier" TEXT NOT NULL,
@@ -49,37 +61,26 @@ CREATE TABLE "verification" (
     CONSTRAINT "verification_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateIndex
+CREATE UNIQUE INDEX "user_email_key" ON "user"("email");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "session_token_key" ON "session"("token");
+
+-- CreateIndex
 CREATE INDEX "session_userId_idx" ON "session"("userId");
+
+-- CreateIndex
 CREATE INDEX "account_userId_idx" ON "account"("userId");
-CREATE UNIQUE INDEX "account_providerId_accountId_key" ON "account"("providerId", "accountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "account_issuer_accountId_key" ON "account"("issuer", "accountId");
+
+-- CreateIndex
 CREATE INDEX "verification_identifier_idx" ON "verification"("identifier");
 
-INSERT INTO "account" (
-    "id",
-    "accountId",
-    "providerId",
-    "userId",
-    "password",
-    "createdAt",
-    "updatedAt"
-)
-SELECT
-    'legacy-' || "id",
-    "id",
-    'credential',
-    "id",
-    "passwordHash",
-    "createdAt",
-    "updatedAt"
-FROM "user";
+-- AddForeignKey
+ALTER TABLE "session" ADD CONSTRAINT "session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
-ALTER TABLE "user" ALTER COLUMN "name" DROP DEFAULT;
-
-ALTER TABLE "session"
-    ADD CONSTRAINT "session_userId_fkey"
-    FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
-ALTER TABLE "account"
-    ADD CONSTRAINT "account_userId_fkey"
-    FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+-- AddForeignKey
+ALTER TABLE "account" ADD CONSTRAINT "account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
