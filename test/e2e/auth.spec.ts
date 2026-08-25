@@ -5,7 +5,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../../src/generated/prisma/client';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { configureApplication } from '../../src/platform/http/configure-application';
 import { defaultEnvironment } from '../support/default-environment';
 import {
@@ -86,6 +86,7 @@ describe('Better Auth authentication (e2e)', () => {
       .expect(200);
     const cookie = login.headers['set-cookie']?.[0] ?? '';
     expect(cookie).toContain('HttpOnly');
+    expect(cookie).toContain('SameSite=Lax');
     await request(app.getHttpServer())
       .get('/api/auth/get-session')
       .set('Cookie', cookie)
@@ -302,5 +303,121 @@ describe('Better Auth authentication (e2e)', () => {
       .expect(({ body }: { body: { code: string } }) =>
         expect(body.code).toBe('CANNOT_REMOVE_OWN_ADMIN_ROLE'),
       );
+  });
+
+  it('When session cookie caching stays disabled, then a role change is visible on the very next request using the same session cookie', async () => {
+    const targetEmail = 'cache-guarantee-target@example.com';
+    const adminEmail = 'cache-guarantee-admin@example.com';
+    await request(app.getHttpServer())
+      .post('/api/auth/sign-up/email')
+      .send({
+        name: 'Cache guarantee target',
+        email: targetEmail,
+        password: 'password-123',
+      })
+      .expect(200);
+    const targetLogin = await request(app.getHttpServer())
+      .post('/api/auth/sign-in/email')
+      .send({ email: targetEmail, password: 'password-123' })
+      .expect(200);
+    const targetCookie = targetLogin.headers['set-cookie']?.[0] ?? '';
+
+    const seedEnvironment = {
+      ...process.env,
+      DATABASE_SCHEMA: environment.schema,
+      DATABASE_URL: environment.databaseUrl,
+      SEED_ADMIN_EMAIL: adminEmail,
+      SEED_ADMIN_PASSWORD: 'password-123',
+    };
+    await execFile('pnpm', ['seed:admin'], { env: seedEnvironment });
+    const adminLogin = await request(app.getHttpServer())
+      .post('/api/auth/sign-in/email')
+      .send({ email: adminEmail, password: 'password-123' })
+      .expect(200);
+    const adminCookie = adminLogin.headers['set-cookie']?.[0] ?? '';
+
+    const prisma = new PrismaClient({
+      adapter: new PrismaPg(
+        { connectionString: environment.databaseUrl },
+        { schema: environment.schema },
+      ),
+    });
+    const target = await prisma.user.findUniqueOrThrow({
+      where: { email: targetEmail },
+    });
+    await prisma.$disconnect();
+
+    await request(app.getHttpServer())
+      .patch(`/users/${target.id}`)
+      .set('Cookie', adminCookie)
+      .send({ role: 'ADMIN' })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .get('/users/me')
+      .set('Cookie', targetCookie)
+      .expect(200)
+      .expect(({ body }: { body: { role: string } }) =>
+        expect(body.role).toBe('ADMIN'),
+      );
+  });
+
+  it('When the deployment topology is cross-site, then the session cookie carries SameSite=None, Secure, and Partitioned', async () => {
+    process.env = {
+      ...originalEnvironment,
+      ...defaultEnvironment,
+      DATABASE_SCHEMA: environment.schema,
+      DATABASE_URL: environment.databaseUrl,
+      DEPLOYMENT_TOPOLOGY: 'cross-site',
+      PUBLIC_BASE_URL: 'https://api.example.com',
+    };
+    // @nestjs/config validates process.env synchronously inside forRoot(), the
+    // first time the module graph is imported, so a fresh module registry is
+    // required to pick up the mutated env for this second application.
+    vi.resetModules();
+    const { AppModule: CrossSiteAppModule } =
+      (await import('../../src/app.module')) as typeof import('../../src/app.module');
+    const { configureApplication: configureCrossSiteApplication } =
+      (await import('../../src/platform/http/configure-application')) as typeof import('../../src/platform/http/configure-application');
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [CrossSiteAppModule],
+    }).compile();
+    const crossSiteApp =
+      moduleFixture.createNestApplication<NestExpressApplication>({
+        bodyParser: false,
+      });
+    configureCrossSiteApplication(crossSiteApp);
+    await crossSiteApp.init();
+
+    try {
+      await request(crossSiteApp.getHttpServer())
+        .post('/api/auth/sign-up/email')
+        .send({
+          name: 'Cross-site reader',
+          email: 'cross-site-reader@example.com',
+          password: 'password-123',
+        })
+        .expect(200);
+      const login = await request(crossSiteApp.getHttpServer())
+        .post('/api/auth/sign-in/email')
+        .send({
+          email: 'cross-site-reader@example.com',
+          password: 'password-123',
+        })
+        .expect(200);
+      const cookie = login.headers['set-cookie']?.[0] ?? '';
+      expect(cookie).toContain('HttpOnly');
+      expect(cookie).toContain('SameSite=None');
+      expect(cookie).toContain('Secure');
+      expect(cookie).toContain('Partitioned');
+    } finally {
+      await crossSiteApp.close();
+      process.env = {
+        ...originalEnvironment,
+        ...defaultEnvironment,
+        DATABASE_SCHEMA: environment.schema,
+        DATABASE_URL: environment.databaseUrl,
+      };
+    }
   });
 });

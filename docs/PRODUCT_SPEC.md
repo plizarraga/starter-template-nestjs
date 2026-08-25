@@ -56,6 +56,18 @@ Starter-owned errors use this shape:
 - Active sessions are renewed no more frequently than once per day.
 - Trusted origins are configured through `CORS_ORIGINS`.
 - Better Auth's native per-route limits protect sign-up and sign-in.
+- `DEPLOYMENT_TOPOLOGY` declares where the Authenticated Client is deployed
+  relative to the API, not a cookie policy directly. `same-site` (default)
+  issues a session cookie carrying `SameSite=Lax` and `Secure` in production.
+  `cross-site` issues one carrying `SameSite=None`, `Secure`, and
+  `Partitioned`, so a client on a different registrable domain keeps receiving
+  the cookie — at the cost of surrendering the browser's own CSRF protection
+  on starter-owned routes. Both carry `HttpOnly`.
+- Session cookie caching is disabled: a role change always takes effect on the
+  very next protected request.
+- A `cross-site` topology, or `NODE_ENV=production`, paired with a non-`https`
+  `PUBLIC_BASE_URL` fails application startup instead of issuing a cookie the
+  browser will silently reject.
 
 ## 4. Authorization and Users
 
@@ -109,9 +121,9 @@ substring. List responses use:
 
 ## 6. Configuration and Operations
 
-`NODE_ENV`, `DATABASE_URL`, `BETTER_AUTH_SECRET`, and `CORS_ORIGINS` are
-required. `PORT`, `DATABASE_SCHEMA`, log level, and Better Auth route limits
-have defaults. `pnpm seed:admin` reads `SEED_ADMIN_EMAIL` and
+`NODE_ENV`, `DATABASE_URL`, `BETTER_AUTH_SECRET`, `CORS_ORIGINS`, and
+`PUBLIC_BASE_URL` are required. `PORT`, `DATABASE_SCHEMA`,
+`DEPLOYMENT_TOPOLOGY`, log level, and Better Auth route limits have defaults. `pnpm seed:admin` reads `SEED_ADMIN_EMAIL` and
 `SEED_ADMIN_PASSWORD`, creates an account if absent, or promotes the matching
 account without creating a duplicate. `pnpm seed:user` does the same with
 `SEED_USER_EMAIL` and `SEED_USER_PASSWORD`, creating or promoting a regular

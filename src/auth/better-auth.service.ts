@@ -6,8 +6,33 @@ import { fromNodeHeaders, toNodeHandler } from 'better-auth/node';
 import { openAPI } from 'better-auth/plugins';
 import type { Request, RequestHandler, Response } from 'express';
 import { Role } from '../generated/prisma/client';
-import { Environment } from '../platform/config/environment';
+import {
+  DeploymentTopology,
+  Environment,
+} from '../platform/config/environment';
 import { PrismaService } from '../platform/prisma/prisma.service';
+
+type CookieAttributes = {
+  httpOnly: true;
+  partitioned?: true;
+  sameSite: 'lax' | 'none';
+  secure: boolean;
+};
+
+export function deriveCookieAttributes(
+  topology: DeploymentTopology,
+  nodeEnv: Environment['NODE_ENV'],
+): CookieAttributes {
+  if (topology === 'cross-site') {
+    return {
+      httpOnly: true,
+      partitioned: true,
+      sameSite: 'none',
+      secure: true,
+    };
+  }
+  return { httpOnly: true, sameSite: 'lax', secure: nodeEnv === 'production' };
+}
 
 function createAuthInstance(
   config: ConfigService<Environment, true>,
@@ -19,6 +44,13 @@ function createAuthInstance(
     .map((origin) => origin.trim());
 
   return betterAuth({
+    advanced: {
+      defaultCookieAttributes: deriveCookieAttributes(
+        config.getOrThrow<DeploymentTopology>('DEPLOYMENT_TOPOLOGY'),
+        config.getOrThrow<Environment['NODE_ENV']>('NODE_ENV'),
+      ),
+    },
+    baseURL: config.getOrThrow<string>('PUBLIC_BASE_URL'),
     database: prismaAdapter(prisma, { provider: 'postgresql' }),
     emailAndPassword: { enabled: true },
     logger: { disabled: true },
@@ -35,6 +67,7 @@ function createAuthInstance(
       },
     },
     session: {
+      cookieCache: { enabled: false },
       expiresIn: 7 * 24 * 60 * 60,
       updateAge: 24 * 60 * 60,
     },

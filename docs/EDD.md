@@ -44,6 +44,23 @@ loads the matching user role, unless the route (or its controller) carries
 and rejects an unauthenticated request even on a route contradictorily marked
 both `@Public()` and `@Roles()` — a route always fails closed. Session-renewal
 cookies emitted by Better Auth are forwarded to the protected route response.
+
+`DEPLOYMENT_TOPOLOGY` declares where the Authenticated Client is deployed, not
+a cookie policy, and `deriveCookieAttributes` (`src/auth/better-auth.service.ts`)
+derives every session cookie attribute from it: `same-site` keeps
+`SameSite=Lax` with `Secure` only in production (today's behavior); `cross-site`
+issues `SameSite=None; Secure; Partitioned; HttpOnly`, because `SameSite=None`
+is only honored together with `Secure`, and `Partitioned` (CHIPS) is required
+for the cookie to survive third-party cookie deprecation — the three move
+together rather than as independent knobs. `cross-site` surrenders the
+browser's own CSRF protection on starter-owned routes until the blocked
+origin-check ticket lands, so the default stays `same-site`. Session cookie
+caching (`session.cookieCache`) stays disabled: enabling it would trade the
+guarantee that a role change takes effect on the next protected request for a
+staleness window. `PUBLIC_BASE_URL` feeds Better Auth's `baseURL` and must be
+`https` when `DEPLOYMENT_TOPOLOGY=cross-site` or `NODE_ENV=production`; a
+configuration browsers would reject fails at boot with a message naming the
+offending combination, rather than as a silent `401` in production.
 An end-to-end route-table sweep (`test/e2e/route-table.spec.ts`) enumerates
 every registered route and asserts each one either carries `@Public()` or
 rejects an anonymous request, so a route added later without either marker
@@ -67,6 +84,8 @@ the local values; production receives real values from the deployment platform.
 | `DATABASE_SCHEMA` | Optional generated-query schema; defaults to `public` |
 | `BETTER_AUTH_SECRET` | Required, at least 32 characters |
 | `CORS_ORIGINS` | Required comma-separated trusted origins |
+| `DEPLOYMENT_TOPOLOGY` | `same-site` or `cross-site`; defaults to `same-site` |
+| `PUBLIC_BASE_URL` | Required absolute `http`/`https` URL; must be `https` under `cross-site` or `production` |
 | `LOG_LEVEL` | Defaults to `debug` outside production and `info` in production |
 | `RATE_LIMIT_REGISTER_*` | Better Auth native sign-up limit override |
 | `RATE_LIMIT_LOGIN_*` | Better Auth native sign-in limit override |

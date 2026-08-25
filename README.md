@@ -93,6 +93,8 @@ from its deployment platform; `.env` is not loaded with `NODE_ENV=production`.
 | `DATABASE_SCHEMA` | No | Generated-query schema; defaults to `public`. |
 | `BETTER_AUTH_SECRET` | Yes | At least 32-character Better Auth secret. |
 | `CORS_ORIGINS` | Yes | Comma-separated trusted browser origins. |
+| `DEPLOYMENT_TOPOLOGY` | No | `same-site` or `cross-site`; defaults to `same-site`. `same-site` keeps `SameSite=Lax` cookies for a client on the same registrable domain. `cross-site` issues `SameSite=None; Secure; Partitioned` cookies for a client on a different site, at the cost of the browser's own CSRF protection on starter-owned routes. |
+| `PUBLIC_BASE_URL` | Yes | Absolute `http`/`https` base URL of this API. Must be `https` when `DEPLOYMENT_TOPOLOGY=cross-site` or `NODE_ENV=production`. |
 | `LOG_LEVEL` | No | Pino level; defaults to `debug` outside production and `info` in production. |
 | `RATE_LIMIT_REGISTER_MAX` | No | Native Better Auth sign-up request limit; defaults to `5`. |
 | `RATE_LIMIT_REGISTER_TTL_SECONDS` | No | Sign-up limit window in seconds; defaults to `3600`. |
