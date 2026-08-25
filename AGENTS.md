@@ -39,10 +39,12 @@ must be available; the local Compose service is not required for those suites.
 ## Architecture
 
 `PlatformModule` is global and provides configuration, logging, Prisma, request
-IDs, errors, and health checks. Every route is protected by default:
-`AccessControlModule` registers `SessionGuard` and `RolesGuard` as
-application-scoped global guards, in that order, so a new feature module needs
-no auth-related imports to be protected. Mark a route or controller `@Public()`
+IDs, errors, health checks, and shared pagination contracts
+(`src/platform/pagination/`). Every route is protected by default:
+`AccessControlModule` registers `RateLimitGuard`, `SessionGuard`, `RolesGuard`,
+then `OriginGuard` as application-scoped global guards from a single provider
+array, in that order, so a new feature module needs no auth-related imports to
+be protected. Mark a route or controller `@Public()`
 (`src/auth/decorators/public.decorator.ts`) to exempt it from the session
 requirement; `@Roles()` still restricts a route to a `Role`. The dependency
 direction keeps `AuthModule` and `UsersModule` independent: `SessionGuard`
@@ -53,7 +55,10 @@ profile route resolves its separate public projection through `UsersService`.
 
 Controllers translate HTTP input to services. Services own authorization rules.
 Repositories own datastore operations. Features use exported services rather
-than another feature's repository.
+than another feature's repository. A paginated resource extends the shared
+`PaginationQueryDto` (page/limit) instead of redeclaring those fields, and
+computes its response metadata through the shared builder in
+`src/platform/pagination/`.
 
 `configureApplication` sets the `api` global prefix and enables URI versioning
 with a `v1` default, so every starter-owned route is served under `/api/v1`.
@@ -68,6 +73,22 @@ narrowing its role to `USER` or `ADMIN`; `RolesGuard` applies `@Roles()`
 metadata and fails closed (rejects unauthenticated) if a route is
 contradictorily marked both `@Public()` and `@Roles()`. A role update affects
 the next protected request.
+
+`DEPLOYMENT_TOPOLOGY` (`same-site` default or `cross-site`) declares where the
+Authenticated Client is deployed relative to the API, and drives every session
+cookie attribute together (`SameSite`, `Secure`, `Partitioned`) rather than as
+independent knobs — see `deriveCookieAttributes` in
+`src/auth/better-auth.service.ts`. `cross-site` surrenders the browser's own
+`SameSite=Lax` CSRF protection, so `OriginGuard` restores it for starter-owned
+state-changing requests (`POST`/`PUT`/`PATCH`/`DELETE`) by delegating to
+`OriginValidator` (`src/platform/http/origin-validator.service.ts`); it is
+inert for safe methods and under `same-site`. `PUBLIC_BASE_URL` is required
+and must be `https` when `DEPLOYMENT_TOPOLOGY=cross-site` or
+`NODE_ENV=production`; an invalid combination fails boot rather than issuing a
+cookie the browser will reject. Starter-owned routes are rate limited via
+`RateLimitGuard` (`RATE_LIMIT_MAX`/`RATE_LIMIT_TTL_SECONDS`); health routes are
+exempt. Nest shutdown hooks are enabled so `SIGTERM` drains in-flight requests
+before Prisma disconnects.
 
 `PlatformError` is converted by the global exception filter into the standard
 starter-owned error shape. Do not construct error responses in controllers.
@@ -87,10 +108,11 @@ for starter-owned business rules; do not mock or assert Better Auth internals.
 
 ## Configuration
 
-Joi validates configuration in `src/platform/config/environment.ts`. Copy
-`.env.example` to `.env` for local development. Production receives environment
-variables from the deployment platform. PostgreSQL is the only runtime service;
-production requires secure cookies and disables Swagger.
+Joi validates configuration in `src/platform/config/environment.ts`, including
+combined checks such as `DEPLOYMENT_TOPOLOGY`/`PUBLIC_BASE_URL`/`NODE_ENV`.
+Copy `.env.example` to `.env` for local development. Production receives
+environment variables from the deployment platform. PostgreSQL is the only
+runtime service; production requires secure cookies and disables Swagger.
 
 ## Workflow
 
