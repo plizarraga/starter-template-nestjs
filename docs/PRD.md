@@ -26,7 +26,10 @@ each project.
   administrator.
 - PostgreSQL is the only runtime infrastructure dependency.
 - Request validation, stable starter-owned error responses, structured logging,
-  request IDs, and liveness/readiness endpoints are available by default.
+  request IDs, rate-limited starter-owned routes, and liveness/readiness
+  endpoints are available by default.
+- Deployments drain in-flight requests and release datastore connections on
+  shutdown.
 - Unit, integration, and HTTP E2E tests protect the critical paths.
 
 ## Security Principles

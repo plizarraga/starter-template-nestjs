@@ -11,6 +11,8 @@
 | Authorization | Starter-owned `USER` and `ADMIN` roles on Better Auth users |
 | Validation | Global Nest `ValidationPipe` and DTOs |
 | Logging | `nestjs-pino` with centralized redaction |
+| Starter-owned route limits | `@nestjs/throttler` with environment-configured limits; health probes exempt |
+| Shutdown | Nest shutdown hooks drain HTTP work before Prisma disconnects |
 | Tests | Vitest and PostgreSQL Testcontainers |
 | API documentation | Swagger at `/docs` outside production |
 
@@ -18,7 +20,8 @@
 
 `PlatformModule` is global and supplies configuration, logging, Prisma,
 request IDs, errors, health checks, and shared pagination contracts. Routing is secure by default:
-`AccessControlModule` registers `SessionGuard`, `RolesGuard`, then `OriginGuard`
+`AccessControlModule` registers `RateLimitGuard`, `SessionGuard`, `RolesGuard`,
+then `OriginGuard`
 as application-scoped global guards from a single provider array, so guard
 execution order does not depend on module initialization order. Feature modules
 never import a guard as a class; a route opts out of the session requirement
@@ -92,6 +95,8 @@ the local values; production receives real values from the deployment platform.
 | `LOG_LEVEL` | Defaults to `debug` outside production and `info` in production |
 | `RATE_LIMIT_REGISTER_*` | Better Auth native sign-up limit override |
 | `RATE_LIMIT_LOGIN_*` | Better Auth native sign-in limit override |
+| `RATE_LIMIT_MAX` | Starter-owned route threshold; defaults to `100` |
+| `RATE_LIMIT_TTL_SECONDS` | Starter-owned route window in seconds; defaults to `60` |
 | `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` | Required only by `seed:admin` |
 | `SEED_USER_EMAIL`, `SEED_USER_PASSWORD` | Required only by `seed:user` |
 
@@ -104,6 +109,11 @@ tokens, Better Auth configuration, and database URLs from logs.
 
 `GET /health/live` is process-only. `GET /health/ready` checks PostgreSQL and
 returns a minimal per-dependency status without exposing connection details.
+Both health routes bypass the application rate limiter so an orchestrator cannot
+mark a healthy instance unhealthy due to its own probe traffic. Better Auth
+continues to own its native route limits because its Express middleware runs
+before the Nest router. Nest shutdown hooks stop accepting new work, drain
+in-flight requests, then call Prisma's module destruction hook to disconnect.
 Swagger documents starter-owned health and user routes; Better Auth owns its
 native authentication route contract.
 

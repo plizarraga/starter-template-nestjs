@@ -4,7 +4,7 @@ import { BetterAuthService } from './better-auth.service';
 import { SessionGuard } from './session.guard';
 
 @Module({
-  exports: [BetterAuthService, SessionGuard, UsersModule],
+  exports: [BetterAuthService, SessionGuard],
   imports: [UsersModule],
   providers: [BetterAuthService, SessionGuard],
 })

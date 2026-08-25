@@ -10,6 +10,7 @@ async function bootstrap() {
     bodyParser: false,
     bufferLogs: true,
   });
+  app.enableShutdownHooks();
   await configureApplication(app);
   const config = app.get(ConfigService<Environment, true>);
 

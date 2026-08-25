@@ -75,7 +75,13 @@ export class UsersController {
   })
   @Get()
   list(@Query() query: ListUsersQueryDto) {
-    return this.users.list(query);
+    return this.users.list({
+      limit: query.limit,
+      page: query.page,
+      search: query.search,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
+    });
   }
 
   @Roles(Role.ADMIN)

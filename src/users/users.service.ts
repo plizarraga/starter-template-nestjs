@@ -7,7 +7,6 @@ import {
   PaginatedUsers,
   PublicUser,
   UsersRepository,
-  UserTransaction,
 } from './users.repository';
 
 export type { PublicUser } from './users.repository';
@@ -22,10 +21,6 @@ export class UsersService {
 
   findPublicById(id: string): Promise<PublicUser | null> {
     return this.users.findPublicById(id);
-  }
-
-  transact<T>(work: (users: UserTransaction) => Promise<T>): Promise<T> {
-    return this.users.transact(work);
   }
 
   list(params: ListUsersParams): Promise<PaginatedUsers> {

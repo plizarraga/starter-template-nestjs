@@ -14,8 +14,10 @@ export type Environment = {
   PUBLIC_BASE_URL: string;
   RATE_LIMIT_LOGIN_MAX: number;
   RATE_LIMIT_LOGIN_TTL_SECONDS: number;
+  RATE_LIMIT_MAX: number;
   RATE_LIMIT_REGISTER_MAX: number;
   RATE_LIMIT_REGISTER_TTL_SECONDS: number;
+  RATE_LIMIT_TTL_SECONDS: number;
 };
 
 const environmentSchema = Joi.object<Environment>({
@@ -44,11 +46,13 @@ const environmentSchema = Joi.object<Environment>({
     .required(),
   RATE_LIMIT_LOGIN_MAX: Joi.number().integer().positive().default(10),
   RATE_LIMIT_LOGIN_TTL_SECONDS: Joi.number().integer().positive().default(900),
+  RATE_LIMIT_MAX: Joi.number().integer().positive().default(100),
   RATE_LIMIT_REGISTER_MAX: Joi.number().integer().positive().default(5),
   RATE_LIMIT_REGISTER_TTL_SECONDS: Joi.number()
     .integer()
     .positive()
     .default(3600),
+  RATE_LIMIT_TTL_SECONDS: Joi.number().integer().positive().default(60),
 }).unknown(true);
 
 function assertSecurePublicBaseUrl(env: Environment): void {

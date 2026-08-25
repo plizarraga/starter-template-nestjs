@@ -1,14 +1,30 @@
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from '../auth/auth.module';
 import { SessionGuard } from '../auth/session.guard';
 import { RolesGuard } from '../authorization/guards/roles.guard';
+import { Environment } from '../platform/config/environment';
 import { OriginGuard } from './origin.guard';
+import { RateLimitGuard } from './rate-limit.guard';
 
 @Module({
-  imports: [AuthModule],
+  imports: [
+    AuthModule,
+    ThrottlerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<Environment, true>) => [
+        {
+          limit: config.getOrThrow<number>('RATE_LIMIT_MAX'),
+          ttl: config.getOrThrow<number>('RATE_LIMIT_TTL_SECONDS') * 1000,
+        },
+      ],
+    }),
+  ],
   providers: [
-    { provide: APP_GUARD, useClass: SessionGuard },
+    { provide: APP_GUARD, useClass: RateLimitGuard },
+    { provide: APP_GUARD, useExisting: SessionGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_GUARD, useClass: OriginGuard },
   ],

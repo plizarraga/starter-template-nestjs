@@ -2,6 +2,27 @@ import { describe, expect, it } from 'vitest';
 import { validateEnvironment } from './environment';
 
 describe('validateEnvironment', () => {
+  it('When starter route rate limits are omitted, then they use safe defaults', () => {
+    const environment = { ...process.env };
+    delete environment.RATE_LIMIT_MAX;
+    delete environment.RATE_LIMIT_TTL_SECONDS;
+
+    const result = validateEnvironment(environment);
+
+    expect(result.RATE_LIMIT_MAX).toBe(100);
+    expect(result.RATE_LIMIT_TTL_SECONDS).toBe(60);
+  });
+
+  it('When a starter route rate limit is not positive, then application initialization fails', () => {
+    expect(() =>
+      validateEnvironment({
+        ...process.env,
+        RATE_LIMIT_MAX: '0',
+        RATE_LIMIT_TTL_SECONDS: '0',
+      }),
+    ).toThrow(/RATE_LIMIT_(MAX|TTL_SECONDS)/);
+  });
+
   it('When DEPLOYMENT_TOPOLOGY is omitted, then it defaults to same-site', () => {
     const environment = { ...process.env };
     delete environment.DEPLOYMENT_TOPOLOGY;

@@ -40,6 +40,29 @@ describe('UsersController', () => {
     expect(result).toBe(profile);
   });
 
+  it('When listing users, then it maps the HTTP query to the service contract', () => {
+    const users = { list: vi.fn() };
+    const controller = new UsersController(users as never);
+    const query = {
+      ignored: 'request-only value',
+      limit: 50,
+      page: 2,
+      search: 'reader@example.com',
+      sortBy: 'email' as const,
+      sortOrder: 'asc' as const,
+    };
+
+    void controller.list(query);
+
+    expect(users.list).toHaveBeenCalledWith({
+      limit: query.limit,
+      page: query.page,
+      search: query.search,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
+    });
+  });
+
   it('When fetching a missing user by id, then it rejects with USER_NOT_FOUND', async () => {
     const users = { findPublicById: vi.fn().mockResolvedValue(null) };
     const controller = new UsersController(users as never);

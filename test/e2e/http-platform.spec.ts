@@ -39,7 +39,11 @@ async function createApplication(
   config: ConfigService<Environment, true>,
 ): Promise<NestExpressApplication> {
   const moduleFixture = await Test.createTestingModule({
-    controllers: [ValidationProbeController],
+    controllers: [
+      RateLimitProbeController,
+      RateLimitProtectedProbeController,
+      ValidationProbeController,
+    ],
     imports: [AppModule],
   })
     .overrideProvider(ConfigService)
@@ -62,6 +66,23 @@ class ValidationProbeController {
   @Post()
   create(@Body() body: ValidationProbeDto): ValidationProbeDto {
     return body;
+  }
+}
+
+@Public()
+@Controller('rate-limit-probe')
+class RateLimitProbeController {
+  @Get()
+  read(): { status: string } {
+    return { status: 'ok' };
+  }
+}
+
+@Controller('rate-limit-protected-probe')
+class RateLimitProtectedProbeController {
+  @Get()
+  read(): { status: string } {
+    return { status: 'ok' };
   }
 }
 
@@ -214,6 +235,43 @@ describe('HTTP platform (e2e)', () => {
       .post('/validation-probe')
       .send({ email: 'reader@example.com' })
       .expect(201);
+  });
+
+  it('When a starter-owned route exceeds its limit, then it is rejected', async () => {
+    app = await createApplication(
+      createConfig({ RATE_LIMIT_MAX: '2', RATE_LIMIT_TTL_SECONDS: '60' }),
+    );
+
+    await request(app.getHttpServer()).get('/rate-limit-probe').expect(200);
+    await request(app.getHttpServer()).get('/rate-limit-probe').expect(200);
+    await request(app.getHttpServer()).get('/rate-limit-probe').expect(429);
+  });
+
+  it('When an anonymous protected route exceeds its limit, then it is rejected before session authorization', async () => {
+    app = await createApplication(
+      createConfig({ RATE_LIMIT_MAX: '2', RATE_LIMIT_TTL_SECONDS: '60' }),
+    );
+
+    await request(app.getHttpServer())
+      .get('/rate-limit-protected-probe')
+      .expect(401);
+    await request(app.getHttpServer())
+      .get('/rate-limit-protected-probe')
+      .expect(401);
+    await request(app.getHttpServer())
+      .get('/rate-limit-protected-probe')
+      .expect(429);
+  });
+
+  it('When health probes exceed the starter route limit, then they are not throttled', async () => {
+    app = await createApplication(
+      createConfig({ RATE_LIMIT_MAX: '1', RATE_LIMIT_TTL_SECONDS: '60' }),
+    );
+
+    await request(app.getHttpServer()).get('/health/live').expect(200);
+    await request(app.getHttpServer()).get('/health/live').expect(200);
+    await request(app.getHttpServer()).get('/health/ready').expect(503);
+    await request(app.getHttpServer()).get('/health/ready').expect(503);
   });
 
   it('When a cross-site safe request has no origin, then any starter-owned route accepts it', async () => {

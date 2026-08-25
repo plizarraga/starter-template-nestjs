@@ -117,6 +117,9 @@ substring. List responses use:
 
 - All starter-owned request bodies, parameters, and queries are validated.
 - Every request has an `X-Request-Id` response header.
+- Starter-owned routes are rate limited using `RATE_LIMIT_MAX` requests per
+  `RATE_LIMIT_TTL_SECONDS` seconds. The `/health/live` and `/health/ready`
+  probes are exempt. Better Auth retains its independent native limits.
 - Structured logs redact passwords, cookies, session values, configuration
   secrets, and database URLs.
 - `GET /health/live` returns `{ "status": "ok" }` while the process responds.
@@ -128,7 +131,10 @@ substring. List responses use:
 
 `NODE_ENV`, `DATABASE_URL`, `BETTER_AUTH_SECRET`, `CORS_ORIGINS`, and
 `PUBLIC_BASE_URL` are required. `PORT`, `DATABASE_SCHEMA`,
-`DEPLOYMENT_TOPOLOGY`, log level, and Better Auth route limits have defaults. `pnpm seed:admin` reads `SEED_ADMIN_EMAIL` and
+`DEPLOYMENT_TOPOLOGY`, log level, starter route limits (`RATE_LIMIT_MAX` and
+`RATE_LIMIT_TTL_SECONDS`), and Better Auth route limits have defaults. The
+application drains in-flight requests and releases its PostgreSQL connection
+during a process shutdown. `pnpm seed:admin` reads `SEED_ADMIN_EMAIL` and
 `SEED_ADMIN_PASSWORD`, creates an account if absent, or promotes the matching
 account without creating a duplicate. `pnpm seed:user` does the same with
 `SEED_USER_EMAIL` and `SEED_USER_PASSWORD`, creating or promoting a regular
