@@ -62,7 +62,12 @@ Starter-owned errors use this shape:
   `cross-site` issues one carrying `SameSite=None`, `Secure`, and
   `Partitioned`, so a client on a different registrable domain keeps receiving
   the cookie — at the cost of surrendering the browser's own CSRF protection
-  on starter-owned routes. Both carry `HttpOnly`.
+  on starter-owned routes. Under `cross-site`, every state-changing
+  starter-owned request (`POST`, `PUT`, `PATCH`, or `DELETE`) must therefore
+  carry an `Origin` that exactly matches a configured `CORS_ORIGINS` value;
+  otherwise it receives the standard `FORBIDDEN` error. Safe methods and all
+  starter-owned requests under `same-site` do not require an origin check.
+  Both cookies carry `HttpOnly`.
 - Session cookie caching is disabled: a role change always takes effect on the
   very next protected request.
 - A `cross-site` topology, or `NODE_ENV=production`, paired with a non-`https`

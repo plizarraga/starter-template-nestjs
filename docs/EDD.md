@@ -18,11 +18,11 @@
 
 `PlatformModule` is global and supplies configuration, logging, Prisma,
 request IDs, errors, and health checks. Routing is secure by default:
-`AccessControlModule` registers `SessionGuard` then `RolesGuard` as
-application-scoped global guards from a single provider array, so guard
-execution order does not depend on module initialization order. Feature
-modules never import a guard as a class; a route opts out of the session
-requirement with the metadata-only `@Public()` decorator instead.
+`AccessControlModule` registers `SessionGuard`, `RolesGuard`, then `OriginGuard`
+as application-scoped global guards from a single provider array, so guard
+execution order does not depend on module initialization order. Feature modules
+never import a guard as a class; a route opts out of the session requirement
+with the metadata-only `@Public()` decorator instead.
 `AuthModule` mounts Better Auth and imports `UsersModule` one-directionally,
 because `SessionGuard` resolves the principal through `UsersService`.
 `UsersModule` has no auth-related imports.
@@ -52,15 +52,18 @@ derives every session cookie attribute from it: `same-site` keeps
 issues `SameSite=None; Secure; Partitioned; HttpOnly`, because `SameSite=None`
 is only honored together with `Secure`, and `Partitioned` (CHIPS) is required
 for the cookie to survive third-party cookie deprecation — the three move
-together rather than as independent knobs. `cross-site` surrenders the
-browser's own CSRF protection on starter-owned routes until the blocked
-origin-check ticket lands, so the default stays `same-site`. Session cookie
-caching (`session.cookieCache`) stays disabled: enabling it would trade the
-guarantee that a role change takes effect on the next protected request for a
-staleness window. `PUBLIC_BASE_URL` feeds Better Auth's `baseURL` and must be
-`https` when `DEPLOYMENT_TOPOLOGY=cross-site` or `NODE_ENV=production`; a
-configuration browsers would reject fails at boot with a message naming the
-offending combination, rather than as a silent `401` in production.
+together rather than as independent knobs. `OriginGuard` restores the missing
+CSRF control for `cross-site`: it delegates an exact `Origin` check to the
+platform `OriginValidator` for `POST`, `PUT`, `PATCH`, and `DELETE` requests to
+any starter-owned route. It remains inert for safe methods and all `same-site`
+requests, where `SameSite=Lax` remains the browser-level protection. Better
+Auth owns the corresponding check for its native routes. Session cookie caching
+(`session.cookieCache`) stays disabled: enabling it would trade the guarantee
+that a role change takes effect on the next protected request for a staleness
+window. `PUBLIC_BASE_URL` feeds Better Auth's `baseURL` and must be `https` when
+`DEPLOYMENT_TOPOLOGY=cross-site` or `NODE_ENV=production`; a configuration
+browsers would reject fails at boot with a message naming the offending
+combination, rather than as a silent `401` in production.
 An end-to-end route-table sweep (`test/e2e/route-table.spec.ts`) enumerates
 every registered route and asserts each one either carries `@Public()` or
 rejects an anonymous request, so a route added later without either marker

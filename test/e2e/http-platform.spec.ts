@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { OpenAPIObject } from '@nestjs/swagger';
@@ -7,7 +8,10 @@ import { IsEmail } from 'class-validator';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../../src/app.module';
 import { Public } from '../../src/auth/decorators/public.decorator';
-import { validateEnvironment } from '../../src/platform/config/environment';
+import {
+  Environment,
+  validateEnvironment,
+} from '../../src/platform/config/environment';
 import { configureApplication } from '../../src/platform/http/configure-application';
 import { defaultEnvironment } from '../support/default-environment';
 
@@ -23,9 +27,38 @@ type StandardError = {
   statusCode: number;
 };
 
+function createConfig(
+  overrides: Partial<NodeJS.ProcessEnv> = {},
+): ConfigService<Environment, true> {
+  return new ConfigService<Environment, true>(
+    validateEnvironment({ ...defaultEnvironment, ...overrides }),
+  );
+}
+
+async function createApplication(
+  config: ConfigService<Environment, true>,
+): Promise<NestExpressApplication> {
+  const moduleFixture = await Test.createTestingModule({
+    controllers: [ValidationProbeController],
+    imports: [AppModule],
+  })
+    .overrideProvider(ConfigService)
+    .useValue(config)
+    .compile();
+  const app = moduleFixture.createNestApplication();
+  await configureApplication(app);
+  await app.init();
+  return app;
+}
+
 @Public()
 @Controller('validation-probe')
 class ValidationProbeController {
+  @Get()
+  read(): { status: string } {
+    return { status: 'ok' };
+  }
+
   @Post()
   create(@Body() body: ValidationProbeDto): ValidationProbeDto {
     return body;
@@ -137,6 +170,61 @@ describe('HTTP platform (e2e)', () => {
       path: '/validation-probe',
       statusCode: 400,
     });
+  });
+
+  it('When a cross-site state-changing request has no trusted origin, then any starter-owned route rejects it', async () => {
+    app = await createApplication(
+      createConfig({
+        DEPLOYMENT_TOPOLOGY: 'cross-site',
+        PUBLIC_BASE_URL: 'https://api.example.com',
+      }),
+    );
+
+    const response = await request(app.getHttpServer())
+      .post('/validation-probe')
+      .send({ email: 'reader@example.com' })
+      .expect(403);
+
+    expect(response.body).toMatchObject({
+      code: 'FORBIDDEN',
+      path: '/validation-probe',
+      statusCode: 403,
+    });
+  });
+
+  it('When a cross-site state-changing request has a trusted origin, then any starter-owned route accepts it', async () => {
+    app = await createApplication(
+      createConfig({
+        DEPLOYMENT_TOPOLOGY: 'cross-site',
+        PUBLIC_BASE_URL: 'https://api.example.com',
+      }),
+    );
+
+    await request(app.getHttpServer())
+      .post('/validation-probe')
+      .set('Origin', 'http://localhost:3001')
+      .send({ email: 'reader@example.com' })
+      .expect(201);
+  });
+
+  it('When a same-site state-changing request has no origin, then any starter-owned route accepts it', async () => {
+    app = await createApplication(createConfig());
+
+    await request(app.getHttpServer())
+      .post('/validation-probe')
+      .send({ email: 'reader@example.com' })
+      .expect(201);
+  });
+
+  it('When a cross-site safe request has no origin, then any starter-owned route accepts it', async () => {
+    app = await createApplication(
+      createConfig({
+        DEPLOYMENT_TOPOLOGY: 'cross-site',
+        PUBLIC_BASE_URL: 'https://api.example.com',
+      }),
+    );
+
+    await request(app.getHttpServer()).get('/validation-probe').expect(200);
   });
 
   it('When an unhandled exception occurs, then the response hides infrastructure internals behind the generic error contract', async () => {
