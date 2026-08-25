@@ -1,7 +1,8 @@
 import { applyDecorators, Type } from '@nestjs/common';
 import { ApiExtraModels, ApiProperty, getSchemaPath } from '@nestjs/swagger';
+import { PaginationMeta } from './pagination-metadata';
 
-export class PaginationMetaDto {
+export class PaginationMetaDto implements PaginationMeta {
   @ApiProperty({ description: 'Whether a next page exists.', example: false })
   hasNextPage!: boolean;
 
@@ -41,6 +42,10 @@ export function PaginatedResponseDto<T>(
     @ApiProperty({ type: PaginationMetaDto })
     meta!: PaginationMetaDto;
   }
+
+  Object.defineProperty(PaginatedResponseDtoClass, 'name', {
+    value: `Paginated${itemDto.name}ResponseDto`,
+  });
 
   return PaginatedResponseDtoClass;
 }

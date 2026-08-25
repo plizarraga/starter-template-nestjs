@@ -1,5 +1,6 @@
-import { Transform, Type } from 'class-transformer';
-import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsIn, IsOptional, IsString } from 'class-validator';
+import { PaginationQueryDto } from '../../platform/pagination/pagination-query.dto';
 
 export const sortFields = ['email', 'role', 'createdAt', 'updatedAt'] as const;
 export type SortField = (typeof sortFields)[number];
@@ -7,28 +8,7 @@ export type SortField = (typeof sortFields)[number];
 export const sortOrders = ['asc', 'desc'] as const;
 export type SortOrder = (typeof sortOrders)[number];
 
-export class ListUsersQueryDto {
-  /**
-   * Page to return (1-based).
-   * @example 1
-   */
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page: number = 1;
-
-  /**
-   * Number of users per page.
-   * @example 20
-   */
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit: number = 20;
-
+export class ListUsersQueryDto extends PaginationQueryDto {
   /**
    * Case-insensitive substring match on email.
    * @example user@example.com

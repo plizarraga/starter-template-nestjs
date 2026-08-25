@@ -37,6 +37,7 @@ describe('PaginatedResponseDto', () => {
 
     expect(instance.data).toEqual([{ id: 'a' }]);
     expect(instance.meta.total).toBe(1);
+    expect(Dto.name).toBe('PaginatedSampleItemDtoResponseDto');
   });
 
   it('When called for different item DTOs, then both classes behave independently', () => {
@@ -44,6 +45,8 @@ describe('PaginatedResponseDto', () => {
     const OtherDto = PaginatedResponseDto(OtherItemDto);
 
     expect(SampleDto).not.toBe(OtherDto);
+    expect(SampleDto.name).toBe('PaginatedSampleItemDtoResponseDto');
+    expect(OtherDto.name).toBe('PaginatedOtherItemDtoResponseDto');
 
     const sampleInstance = new SampleDto();
     sampleInstance.data = [{ id: 'a' }];
@@ -59,6 +62,7 @@ describe('PaginatedResponseDto', () => {
     class SamplePaginatedResponseDto extends PaginatedResponseDto(
       SampleItemDto,
     ) {}
+    const OtherPaginatedResponseDto = PaginatedResponseDto(OtherItemDto);
 
     @Controller('sample')
     class SampleController {
@@ -69,7 +73,16 @@ describe('PaginatedResponseDto', () => {
       }
     }
 
-    @Module({ controllers: [SampleController] })
+    @Controller('other')
+    class OtherController {
+      @ApiOkResponse({ type: OtherPaginatedResponseDto })
+      @Get()
+      list() {
+        return { data: [], meta: {} };
+      }
+    }
+
+    @Module({ controllers: [OtherController, SampleController] })
     class SampleModule {}
 
     const moduleRef = await Test.createTestingModule({
@@ -106,5 +119,8 @@ describe('PaginatedResponseDto', () => {
       items: { $ref: '#/components/schemas/SampleItemDto' },
     });
     expect(document.components?.schemas?.['SampleItemDto']).toBeDefined();
+    expect(
+      document.components?.schemas?.['PaginatedOtherItemDtoResponseDto'],
+    ).toBeDefined();
   });
 });

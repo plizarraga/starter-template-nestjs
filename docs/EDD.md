@@ -17,7 +17,7 @@
 ## 2. Architecture
 
 `PlatformModule` is global and supplies configuration, logging, Prisma,
-request IDs, errors, and health checks. Routing is secure by default:
+request IDs, errors, health checks, and shared pagination contracts. Routing is secure by default:
 `AccessControlModule` registers `SessionGuard`, `RolesGuard`, then `OriginGuard`
 as application-scoped global guards from a single provider array, so guard
 execution order does not depend on module initialization order. Feature modules

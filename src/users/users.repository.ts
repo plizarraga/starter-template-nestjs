@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, Role, User } from '../generated/prisma/client';
 import { PlatformError } from '../platform/errors/platform-error';
+import { buildPaginationMeta } from '../platform/pagination/pagination-metadata';
+import { PaginationMeta } from '../platform/pagination/pagination-metadata';
 import { PrismaService } from '../platform/prisma/prisma.service';
 import { SortField, SortOrder } from './dto/list-users-query.dto';
 
@@ -25,14 +27,7 @@ export type ListUsersParams = {
 
 export type PaginatedUsers = {
   data: PublicUser[];
-  meta: {
-    hasNextPage: boolean;
-    hasPreviousPage: boolean;
-    limit: number;
-    page: number;
-    total: number;
-    totalPages: number;
-  };
+  meta: PaginationMeta;
 };
 
 export type AdminUserPatch = {
@@ -99,18 +94,9 @@ export class UsersRepository {
       }),
       this.prisma.user.count({ where }),
     ]);
-    const totalPages = Math.ceil(total / params.limit);
-
     return {
       data,
-      meta: {
-        hasNextPage: params.page < totalPages,
-        hasPreviousPage: params.page > 1,
-        limit: params.limit,
-        page: params.page,
-        total,
-        totalPages,
-      },
+      meta: buildPaginationMeta(total, params.page, params.limit),
     };
   }
 
