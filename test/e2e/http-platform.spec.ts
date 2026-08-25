@@ -119,7 +119,7 @@ describe('HTTP platform (e2e)', () => {
       imports: [AppModule],
     }).compile();
     app = moduleFixture.createNestApplication();
-    configureApplication(app);
+    await configureApplication(app);
     await app.init();
 
     const response = await request(app.getHttpServer())
@@ -141,7 +141,7 @@ describe('HTTP platform (e2e)', () => {
       imports: [AppModule],
     }).compile();
     app = moduleFixture.createNestApplication();
-    configureApplication(app);
+    await configureApplication(app);
     await app.init();
 
     const response = await request(app.getHttpServer())
@@ -160,7 +160,7 @@ describe('HTTP platform (e2e)', () => {
       imports: [AppModule],
     }).compile();
     app = moduleFixture.createNestApplication();
-    configureApplication(app);
+    await configureApplication(app);
     await app.init();
 
     const response = await request(app.getHttpServer())
@@ -178,7 +178,7 @@ describe('HTTP platform (e2e)', () => {
       imports: [AppModule],
     }).compile();
     app = moduleFixture.createNestApplication();
-    configureApplication(app);
+    await configureApplication(app);
     await app.init();
 
     const response = await request(app.getHttpServer())
@@ -308,7 +308,7 @@ describe('HTTP platform (e2e)', () => {
       imports: [AppModule],
     }).compile();
     app = moduleFixture.createNestApplication();
-    configureApplication(app);
+    await configureApplication(app);
     await app.init();
 
     const response = await request(app.getHttpServer())
@@ -339,7 +339,7 @@ describe('HTTP platform (e2e)', () => {
       imports: [AppModule],
     }).compile();
     app = moduleFixture.createNestApplication();
-    configureApplication(app);
+    await configureApplication(app);
     await app.init();
 
     const response = await request(app.getHttpServer())
@@ -380,7 +380,7 @@ describe('HTTP platform (e2e)', () => {
       imports: [AppModule],
     }).compile();
     app = moduleFixture.createNestApplication();
-    configureApplication(app);
+    await configureApplication(app);
     await app.init();
 
     const response = await request(app.getHttpServer())

@@ -58,7 +58,7 @@ describe('Better Auth authentication (e2e)', () => {
       imports: [AppModule],
     }).compile();
     app = moduleFixture.createNestApplication({ bodyParser: false });
-    configureApplication(app);
+    await configureApplication(app);
     await app.init();
   }, 120_000);
 
@@ -414,7 +414,7 @@ describe('Better Auth authentication (e2e)', () => {
       moduleFixture.createNestApplication<NestExpressApplication>({
         bodyParser: false,
       });
-    configureCrossSiteApplication(crossSiteApp);
+    await configureCrossSiteApplication(crossSiteApp);
     await crossSiteApp.init();
 
     try {

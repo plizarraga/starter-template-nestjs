@@ -140,7 +140,7 @@ describe('route table sweep (e2e)', () => {
       .useValue({ check: () => Promise.resolve() })
       .compile();
     app = moduleFixture.createNestApplication();
-    configureApplication(app);
+    await configureApplication(app);
     await app.init();
 
     const routes = discoverRoutes(

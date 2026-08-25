@@ -22,7 +22,7 @@ describe('health endpoints (e2e)', () => {
       .useValue({ check: () => Promise.resolve() })
       .compile();
     app = moduleFixture.createNestApplication();
-    configureApplication(app);
+    await configureApplication(app);
     await app.init();
 
     const response = await request(app.getHttpServer()).get(
@@ -41,7 +41,7 @@ describe('health endpoints (e2e)', () => {
       .useValue({ check: () => Promise.resolve() })
       .compile();
     app = moduleFixture.createNestApplication();
-    configureApplication(app);
+    await configureApplication(app);
     await app.init();
 
     const response = await request(app.getHttpServer()).get(
@@ -66,7 +66,7 @@ describe('health endpoints (e2e)', () => {
       })
       .compile();
     app = moduleFixture.createNestApplication();
-    configureApplication(app);
+    await configureApplication(app);
     await app.init();
 
     const response = await request(app.getHttpServer()).get(
