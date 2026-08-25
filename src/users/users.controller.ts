@@ -6,7 +6,6 @@ import {
   Patch,
   Query,
   Req,
-  UseGuards,
 } from '@nestjs/common';
 import { Role } from '../generated/prisma/client';
 import {
@@ -21,9 +20,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import type { AuthenticatedRequest } from '../auth/session.guard';
-import { SessionGuard } from '../auth/session.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../authorization/decorators/roles.decorator';
 import { PlatformError } from '../platform/errors/platform-error';
 import { PlatformErrorResponseDto } from '../platform/errors/platform-error-response.dto';
 import { AdminUpdateUserDto } from './dto/admin-update-user.dto';
@@ -40,7 +37,6 @@ import { UsersService } from './users.service';
   type: PlatformErrorResponseDto,
 })
 @Controller('users')
-@UseGuards(SessionGuard)
 export class UsersController {
   constructor(private readonly users: UsersService) {}
 
@@ -63,7 +59,6 @@ export class UsersController {
     return user;
   }
 
-  @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'List users (paginated, searchable, sortable)' })
   @ApiOkResponse({
@@ -83,7 +78,6 @@ export class UsersController {
     return this.users.list(query);
   }
 
-  @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Get a user by id' })
   @ApiOkResponse({
@@ -111,7 +105,6 @@ export class UsersController {
     return user;
   }
 
-  @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Update a user email or role' })
   @ApiOkResponse({

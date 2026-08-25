@@ -17,9 +17,15 @@
 ## 2. Architecture
 
 `PlatformModule` is global and supplies configuration, logging, Prisma,
-request IDs, errors, and health checks. `AuthModule` mounts Better Auth and
-imports `UsersModule` through `forwardRef`; `UsersModule` uses the reciprocal
-reference because its controller needs the session and role guards.
+request IDs, errors, and health checks. Routing is secure by default:
+`AccessControlModule` registers `SessionGuard` then `RolesGuard` as
+application-scoped global guards from a single provider array, so guard
+execution order does not depend on module initialization order. Feature
+modules never import a guard as a class; a route opts out of the session
+requirement with the metadata-only `@Public()` decorator instead.
+`AuthModule` mounts Better Auth and imports `UsersModule` one-directionally,
+because `SessionGuard` resolves the principal through `UsersService`.
+`UsersModule` has no auth-related imports.
 
 Controllers translate HTTP input to services. Services contain authorization
 rules. Repositories own Prisma access. Features depend on an exported service,
@@ -33,9 +39,15 @@ interval. `configureApplication` mounts its handler at `/api/auth` before the
 Nest body parser.
 
 `SessionGuard` retrieves the Better Auth session from the request cookie and
-loads the matching user role. `RolesGuard` compares that role with `@Roles()`
-metadata. Session-renewal cookies emitted by Better Auth are forwarded to the
-protected route response.
+loads the matching user role, unless the route (or its controller) carries
+`@Public()`. `RolesGuard` compares the resolved role with `@Roles()` metadata
+and rejects an unauthenticated request even on a route contradictorily marked
+both `@Public()` and `@Roles()` — a route always fails closed. Session-renewal
+cookies emitted by Better Auth are forwarded to the protected route response.
+An end-to-end route-table sweep (`test/e2e/route-table.spec.ts`) enumerates
+every registered route and asserts each one either carries `@Public()` or
+rejects an anonymous request, so a route added later without either marker
+fails the build.
 
 The `User` record has a default `USER` role. Better Auth persists credential
 data in `Account.password` for the `credential` provider. `pnpm seed:admin`

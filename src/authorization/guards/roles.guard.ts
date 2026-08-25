@@ -3,7 +3,7 @@ import { Reflector } from '@nestjs/core';
 import { Role } from '../../generated/prisma/client';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { PlatformError } from '../../platform/errors/platform-error';
-import { AuthenticatedRequest } from '../session.guard';
+import { AuthenticatedRequest } from '../../auth/session.guard';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 
 @Injectable()

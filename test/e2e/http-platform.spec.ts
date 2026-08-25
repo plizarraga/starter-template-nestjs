@@ -6,6 +6,7 @@ import request from 'supertest';
 import { IsEmail } from 'class-validator';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../../src/app.module';
+import { Public } from '../../src/auth/decorators/public.decorator';
 import { validateEnvironment } from '../../src/platform/config/environment';
 import { configureApplication } from '../../src/platform/http/configure-application';
 import { defaultEnvironment } from '../support/default-environment';
@@ -22,6 +23,7 @@ type StandardError = {
   statusCode: number;
 };
 
+@Public()
 @Controller('validation-probe')
 class ValidationProbeController {
   @Post()
@@ -30,6 +32,7 @@ class ValidationProbeController {
   }
 }
 
+@Public()
 @Controller('failure-probe')
 class FailureProbeController {
   @Get()
