@@ -12,6 +12,7 @@ import request from 'supertest';
 import { afterEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../../src/app.module';
 import { IS_PUBLIC_KEY } from '../../src/auth/decorators/public.decorator';
+import { API_VERSIONED_PREFIX } from '../../src/platform/http/api-version';
 import { configureApplication } from '../../src/platform/http/configure-application';
 import { PrismaService } from '../../src/platform/prisma/prisma.service';
 
@@ -155,7 +156,7 @@ describe('route table sweep (e2e)', () => {
 
     for (const route of routes) {
       const response = await request(app.getHttpServer())[route.method](
-        route.path,
+        `${API_VERSIONED_PREFIX}${route.path}`,
       );
       if (route.isPublic) {
         expect(response.status).not.toBe(401);

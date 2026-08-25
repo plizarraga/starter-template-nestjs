@@ -8,6 +8,7 @@ and shared platform capabilities.
 
 - Native Better Auth routes at `/api/auth` for email/password sign-up, sign-in,
   sign-out, and session lookup.
+- Starter-owned routes served under a versioned `/api/v1` prefix.
 - Seven-day rolling browser sessions renewed at most once per day.
 - `USER` and `ADMIN` authorization for starter-owned user APIs.
 - Administrator listing, search, sorting, retrieval, and role/email updates.
@@ -33,8 +34,9 @@ pnpm prisma:migrate
 pnpm start:dev
 ```
 
-The API listens on `http://localhost:3000`. Open `/docs` outside production for
-the starter-owned health and user APIs.
+The API listens on `http://localhost:3000`. Starter-owned routes are served
+under `/api/v1`. Open `/docs` outside production for the starter-owned health
+and user APIs.
 
 Create or promote the first administrator when needed:
 
@@ -53,7 +55,7 @@ SEED_USER_EMAIL=user@example.com SEED_USER_PASSWORD=change-me-now pnpm seed:user
 Better Auth owns authentication at `/api/auth`. A browser signs up and signs in
 through its native JSON endpoints; successful authentication returns an
 HTTP-only session cookie. Send that cookie on requests to protected starter
-routes such as `/users/me`.
+routes such as `/api/v1/users/me`.
 
 ```bash
 curl -i http://localhost:3000/api/auth/sign-up/email \
@@ -62,7 +64,7 @@ curl -i http://localhost:3000/api/auth/sign-up/email \
 curl -i -c cookies.txt http://localhost:3000/api/auth/sign-in/email \
   --json '{"email":"reader@example.com","password":"password-123"}'
 
-curl -b cookies.txt http://localhost:3000/users/me
+curl -b cookies.txt http://localhost:3000/api/v1/users/me
 ```
 
 Set `CORS_ORIGINS` to each browser origin that must make cookie-authenticated
@@ -72,8 +74,8 @@ sign-in routes.
 ## Health
 
 ```bash
-curl http://localhost:3000/health/live
-curl http://localhost:3000/health/ready
+curl http://localhost:3000/api/v1/health/live
+curl http://localhost:3000/api/v1/health/ready
 ```
 
 Readiness reports PostgreSQL only. Apply migrations before deploying application

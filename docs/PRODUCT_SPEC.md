@@ -25,14 +25,20 @@ shapes. The starter does not adapt those responses. Sign-up requires `name`,
 
 ### Starter-Owned Routes
 
+Starter-owned routes are served under a URI-versioned prefix. The current API
+version is `v1`, mounted behind the shared `api` segment, so every
+starter-owned route answers under `/api/v1`. The Authentication API above keeps
+its unversioned `/api/auth` mount and is unaffected when the API version
+changes.
+
 | Method | Path | Access |
 | --- | --- | --- |
-| `GET` | `/users/me` | Active session |
-| `GET` | `/users` | `ADMIN` |
-| `GET` | `/users/:id` | `ADMIN` |
-| `PATCH` | `/users/:id` | `ADMIN` |
-| `GET` | `/health/live` | Public |
-| `GET` | `/health/ready` | Public |
+| `GET` | `/api/v1/users/me` | Active session |
+| `GET` | `/api/v1/users` | `ADMIN` |
+| `GET` | `/api/v1/users/:id` | `ADMIN` |
+| `PATCH` | `/api/v1/users/:id` | `ADMIN` |
+| `GET` | `/api/v1/health/live` | Public |
+| `GET` | `/api/v1/health/ready` | Public |
 
 Starter-owned errors use this shape:
 
@@ -42,7 +48,7 @@ Starter-owned errors use this shape:
   "code": "FORBIDDEN",
   "message": "Forbidden",
   "timestamp": "2026-08-23T21:00:00.000Z",
-  "path": "/users",
+  "path": "/api/v1/users",
   "requestId": "request-id"
 }
 ```
@@ -77,7 +83,7 @@ Starter-owned errors use this shape:
 ## 4. Authorization and Users
 
 The application stores `USER` or `ADMIN` on the Better Auth user record.
-`GET /users/me` returns the authenticated user's public representation:
+`GET /api/v1/users/me` returns the authenticated user's public representation:
 
 ```json
 {
@@ -118,12 +124,14 @@ substring. List responses use:
 - All starter-owned request bodies, parameters, and queries are validated.
 - Every request has an `X-Request-Id` response header.
 - Starter-owned routes are rate limited using `RATE_LIMIT_MAX` requests per
-  `RATE_LIMIT_TTL_SECONDS` seconds. The `/health/live` and `/health/ready`
-  probes are exempt. Better Auth retains its independent native limits.
+  `RATE_LIMIT_TTL_SECONDS` seconds. The `/api/v1/health/live` and
+  `/api/v1/health/ready` probes are exempt. Better Auth retains its
+  independent native limits.
 - Structured logs redact passwords, cookies, session values, configuration
   secrets, and database URLs.
-- `GET /health/live` returns `{ "status": "ok" }` while the process responds.
-- `GET /health/ready` returns `200` and `{ "status": "ok", "checks":
+- `GET /api/v1/health/live` returns `{ "status": "ok" }` while the process
+  responds.
+- `GET /api/v1/health/ready` returns `200` and `{ "status": "ok", "checks":
   { "postgres": "up" } }` when PostgreSQL is available; otherwise it returns
   `503` and marks PostgreSQL as `"down"`.
 

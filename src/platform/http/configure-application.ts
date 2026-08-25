@@ -1,4 +1,4 @@
-import { HttpStatus, ValidationPipe } from '@nestjs/common';
+import { HttpStatus, ValidationPipe, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import {
@@ -13,6 +13,11 @@ import { Logger } from 'nestjs-pino';
 import { Environment } from '../config/environment';
 import { HttpExceptionFilter } from '../errors/http-exception.filter';
 import { requestIdMiddleware } from '../request-id/request-id.middleware';
+import {
+  API_DEFAULT_VERSION,
+  API_GLOBAL_PREFIX,
+  API_VERSION_PREFIX,
+} from './api-version';
 
 export async function configureApplication(
   app: NestExpressApplication,
@@ -31,6 +36,12 @@ export async function configureApplication(
   app.use(json());
   app.use(urlencoded({ extended: true }));
   app.enableCors({ credentials: true, origin: origins });
+  app.setGlobalPrefix(API_GLOBAL_PREFIX);
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: API_DEFAULT_VERSION,
+    prefix: API_VERSION_PREFIX,
+  });
   app.useGlobalPipes(
     new ValidationPipe({
       errorHttpStatusCode: HttpStatus.BAD_REQUEST,

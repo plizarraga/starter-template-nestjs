@@ -6,6 +6,7 @@ import { PrismaClient } from '../../src/generated/prisma/client';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { API_VERSIONED_PREFIX } from '../../src/platform/http/api-version';
 import { configureApplication } from '../../src/platform/http/configure-application';
 import { defaultEnvironment } from '../support/default-environment';
 import {
@@ -97,7 +98,7 @@ describe('Better Auth authentication (e2e)', () => {
         }),
       );
     await request(app.getHttpServer())
-      .get('/users/me')
+      .get(`${API_VERSIONED_PREFIX}/users/me`)
       .set('Cookie', cookie)
       .expect(200)
       .expect(({ body }) =>
@@ -130,7 +131,7 @@ describe('Better Auth authentication (e2e)', () => {
     await prisma.$disconnect();
 
     await request(app.getHttpServer())
-      .get('/users/me')
+      .get(`${API_VERSIONED_PREFIX}/users/me`)
       .set('Cookie', cookie)
       .expect(401)
       .expect(({ body }: { body: { code: string } }) =>
@@ -166,7 +167,7 @@ describe('Better Auth authentication (e2e)', () => {
     });
 
     const response = await request(app.getHttpServer())
-      .get('/users/me')
+      .get(`${API_VERSIONED_PREFIX}/users/me`)
       .set('Cookie', cookie)
       .expect(200);
     const renewedSession = await prisma.session.findFirst({
@@ -245,14 +246,14 @@ describe('Better Auth authentication (e2e)', () => {
     const promotedCookie = promotedLogin.headers['set-cookie']?.[0] ?? '';
 
     await request(app.getHttpServer())
-      .get('/users')
+      .get(`${API_VERSIONED_PREFIX}/users`)
       .set('Cookie', regularCookie)
       .expect(403)
       .expect(({ body }: { body: { code: string } }) =>
         expect(body.code).toBe('FORBIDDEN'),
       );
     await request(app.getHttpServer())
-      .get('/users')
+      .get(`${API_VERSIONED_PREFIX}/users`)
       .set('Cookie', adminCookie)
       .expect(200)
       .expect(({ body }: { body: { data: Array<{ email: string }> } }) =>
@@ -261,7 +262,7 @@ describe('Better Auth authentication (e2e)', () => {
         ),
       );
     await request(app.getHttpServer())
-      .get('/users')
+      .get(`${API_VERSIONED_PREFIX}/users`)
       .set('Cookie', promotedCookie)
       .expect(200);
   });
@@ -303,7 +304,7 @@ describe('Better Auth authentication (e2e)', () => {
     const adminCookie = login.headers['set-cookie']?.[0] ?? '';
 
     await request(app.getHttpServer())
-      .patch(`/users/${target.id}`)
+      .patch(`${API_VERSIONED_PREFIX}/users/${target.id}`)
       .set('Cookie', adminCookie)
       .send({ role: 'ADMIN' })
       .expect(200)
@@ -311,14 +312,14 @@ describe('Better Auth authentication (e2e)', () => {
         expect(body.role).toBe('ADMIN'),
       );
     await request(app.getHttpServer())
-      .get(`/users/${target.id}`)
+      .get(`${API_VERSIONED_PREFIX}/users/${target.id}`)
       .set('Cookie', adminCookie)
       .expect(200)
       .expect(({ body }: { body: { email: string; role: string } }) =>
         expect(body).toMatchObject({ email: targetEmail, role: 'ADMIN' }),
       );
     await request(app.getHttpServer())
-      .patch(`/users/${target.id}`)
+      .patch(`${API_VERSIONED_PREFIX}/users/${target.id}`)
       .set('Cookie', adminCookie)
       .send({ role: 'USER' })
       .expect(200)
@@ -326,7 +327,7 @@ describe('Better Auth authentication (e2e)', () => {
         expect(body.role).toBe('USER'),
       );
     await request(app.getHttpServer())
-      .patch(`/users/${admin.id}`)
+      .patch(`${API_VERSIONED_PREFIX}/users/${admin.id}`)
       .set('Cookie', adminCookie)
       .send({ role: 'USER' })
       .expect(409)
@@ -378,13 +379,13 @@ describe('Better Auth authentication (e2e)', () => {
     await prisma.$disconnect();
 
     await request(app.getHttpServer())
-      .patch(`/users/${target.id}`)
+      .patch(`${API_VERSIONED_PREFIX}/users/${target.id}`)
       .set('Cookie', adminCookie)
       .send({ role: 'ADMIN' })
       .expect(200);
 
     await request(app.getHttpServer())
-      .get('/users')
+      .get(`${API_VERSIONED_PREFIX}/users`)
       .set('Cookie', targetCookie)
       .expect(200);
   });

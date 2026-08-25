@@ -55,6 +55,9 @@ Controllers translate HTTP input to services. Services own authorization rules.
 Repositories own datastore operations. Features use exported services rather
 than another feature's repository.
 
+`configureApplication` sets the `api` global prefix and enables URI versioning
+with a `v1` default, so every starter-owned route is served under `/api/v1`.
+
 Better Auth owns native authentication routes at `/api/auth`, mounted as
 Express middleware ahead of the Nest router, so those requests never reach
 Nest guards and need no `@Public()` marker. Better Auth also owns

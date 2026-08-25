@@ -7,7 +7,7 @@ export class PlatformErrorResponseDto {
   @ApiProperty({ example: 'Forbidden resource' })
   message!: string;
 
-  @ApiProperty({ example: '/users' })
+  @ApiProperty({ example: '/api/v1/users' })
   path!: string;
 
   @ApiProperty({ example: 'request-id' })

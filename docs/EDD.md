@@ -9,6 +9,7 @@
 | Session storage | Better Auth sessions in PostgreSQL |
 | Persistence | Prisma 7 with the PostgreSQL driver adapter |
 | Authorization | Starter-owned `USER` and `ADMIN` roles on Better Auth users |
+| Starter-owned API versioning | URI versioning at `v1` behind the `api` global prefix; Better Auth keeps its unversioned `/api/auth` mount |
 | Validation | Global Nest `ValidationPipe` and DTOs |
 | Logging | `nestjs-pino` with centralized redaction |
 | Starter-owned route limits | `@nestjs/throttler` with environment-configured limits; health probes exempt |
@@ -34,6 +35,11 @@ profile route resolves its separate public projection through `UsersService`.
 Controllers translate HTTP input to services. Services contain authorization
 rules. Repositories own Prisma access. Features depend on an exported service,
 not another feature's repository.
+
+`configureApplication` sets the `api` global prefix and enables URI versioning
+with a `v1` default, so every starter-owned route is served under `/api/v1`.
+Better Auth's handler is mounted directly at `/api/auth` as Express middleware
+and is therefore unaffected by the global prefix and versioning.
 
 ## 3. Identity and Authorization
 
@@ -109,15 +115,16 @@ returns centralized starter-owned errors. A request-ID middleware propagates a
 trusted valid ID or generates one. Pino redaction removes passwords, cookies,
 tokens, Better Auth configuration, and database URLs from logs.
 
-`GET /health/live` is process-only. `GET /health/ready` checks PostgreSQL and
-returns a minimal per-dependency status without exposing connection details.
-Both health routes bypass the application rate limiter so an orchestrator cannot
-mark a healthy instance unhealthy due to its own probe traffic. Better Auth
-continues to own its native route limits because its Express middleware runs
-before the Nest router. Nest shutdown hooks stop accepting new work, drain
-in-flight requests, then call Prisma's module destruction hook to disconnect.
-Swagger documents starter-owned health and user routes; Better Auth owns its
-native authentication route contract.
+`GET /api/v1/health/live` is process-only. `GET /api/v1/health/ready` checks
+PostgreSQL and returns a minimal per-dependency status without exposing
+connection details. Both health routes bypass the application rate limiter so
+an orchestrator cannot mark a healthy instance unhealthy due to its own probe
+traffic. Better Auth continues to own its native route limits because its
+Express middleware runs before the Nest router. Nest shutdown hooks stop
+accepting new work, drain in-flight requests, then call Prisma's module
+destruction hook to disconnect. Swagger documents starter-owned health and
+user routes under their versioned paths; Better Auth owns its native
+authentication route contract.
 
 ## 6. Testing
 

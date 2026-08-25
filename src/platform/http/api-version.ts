@@ -1,0 +1,4 @@
+export const API_GLOBAL_PREFIX = 'api';
+export const API_DEFAULT_VERSION = '1';
+export const API_VERSION_PREFIX = 'v';
+export const API_VERSIONED_PREFIX = `/${API_GLOBAL_PREFIX}/${API_VERSION_PREFIX}${API_DEFAULT_VERSION}`;

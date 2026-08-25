@@ -12,6 +12,7 @@ import {
   Environment,
   validateEnvironment,
 } from '../../src/platform/config/environment';
+import { API_VERSIONED_PREFIX } from '../../src/platform/http/api-version';
 import { configureApplication } from '../../src/platform/http/configure-application';
 import { defaultEnvironment } from '../support/default-environment';
 
@@ -163,7 +164,7 @@ describe('HTTP platform (e2e)', () => {
     await app.init();
 
     const response = await request(app.getHttpServer())
-      .get('/health/live')
+      .get(`${API_VERSIONED_PREFIX}/health/live`)
       .set('Origin', origin)
       .expect(200);
 
@@ -181,14 +182,14 @@ describe('HTTP platform (e2e)', () => {
     await app.init();
 
     const response = await request(app.getHttpServer())
-      .post('/validation-probe')
+      .post(`${API_VERSIONED_PREFIX}/validation-probe`)
       .send({ email: 'reader@example.com', role: 'ADMIN' })
       .expect(400);
     const error = response.body as StandardError;
 
     expect(error).toMatchObject({
       code: 'VALIDATION_ERROR',
-      path: '/validation-probe',
+      path: `${API_VERSIONED_PREFIX}/validation-probe`,
       statusCode: 400,
     });
   });
@@ -202,13 +203,13 @@ describe('HTTP platform (e2e)', () => {
     );
 
     const response = await request(app.getHttpServer())
-      .post('/validation-probe')
+      .post(`${API_VERSIONED_PREFIX}/validation-probe`)
       .send({ email: 'reader@example.com' })
       .expect(403);
 
     expect(response.body).toMatchObject({
       code: 'FORBIDDEN',
-      path: '/validation-probe',
+      path: `${API_VERSIONED_PREFIX}/validation-probe`,
       statusCode: 403,
     });
   });
@@ -222,7 +223,7 @@ describe('HTTP platform (e2e)', () => {
     );
 
     await request(app.getHttpServer())
-      .post('/validation-probe')
+      .post(`${API_VERSIONED_PREFIX}/validation-probe`)
       .set('Origin', 'http://localhost:3001')
       .send({ email: 'reader@example.com' })
       .expect(201);
@@ -232,7 +233,7 @@ describe('HTTP platform (e2e)', () => {
     app = await createApplication(createConfig());
 
     await request(app.getHttpServer())
-      .post('/validation-probe')
+      .post(`${API_VERSIONED_PREFIX}/validation-probe`)
       .send({ email: 'reader@example.com' })
       .expect(201);
   });
@@ -242,9 +243,15 @@ describe('HTTP platform (e2e)', () => {
       createConfig({ RATE_LIMIT_MAX: '2', RATE_LIMIT_TTL_SECONDS: '60' }),
     );
 
-    await request(app.getHttpServer()).get('/rate-limit-probe').expect(200);
-    await request(app.getHttpServer()).get('/rate-limit-probe').expect(200);
-    await request(app.getHttpServer()).get('/rate-limit-probe').expect(429);
+    await request(app.getHttpServer())
+      .get(`${API_VERSIONED_PREFIX}/rate-limit-probe`)
+      .expect(200);
+    await request(app.getHttpServer())
+      .get(`${API_VERSIONED_PREFIX}/rate-limit-probe`)
+      .expect(200);
+    await request(app.getHttpServer())
+      .get(`${API_VERSIONED_PREFIX}/rate-limit-probe`)
+      .expect(429);
   });
 
   it('When an anonymous protected route exceeds its limit, then it is rejected before session authorization', async () => {
@@ -253,13 +260,13 @@ describe('HTTP platform (e2e)', () => {
     );
 
     await request(app.getHttpServer())
-      .get('/rate-limit-protected-probe')
+      .get(`${API_VERSIONED_PREFIX}/rate-limit-protected-probe`)
       .expect(401);
     await request(app.getHttpServer())
-      .get('/rate-limit-protected-probe')
+      .get(`${API_VERSIONED_PREFIX}/rate-limit-protected-probe`)
       .expect(401);
     await request(app.getHttpServer())
-      .get('/rate-limit-protected-probe')
+      .get(`${API_VERSIONED_PREFIX}/rate-limit-protected-probe`)
       .expect(429);
   });
 
@@ -268,10 +275,18 @@ describe('HTTP platform (e2e)', () => {
       createConfig({ RATE_LIMIT_MAX: '1', RATE_LIMIT_TTL_SECONDS: '60' }),
     );
 
-    await request(app.getHttpServer()).get('/health/live').expect(200);
-    await request(app.getHttpServer()).get('/health/live').expect(200);
-    await request(app.getHttpServer()).get('/health/ready').expect(503);
-    await request(app.getHttpServer()).get('/health/ready').expect(503);
+    await request(app.getHttpServer())
+      .get(`${API_VERSIONED_PREFIX}/health/live`)
+      .expect(200);
+    await request(app.getHttpServer())
+      .get(`${API_VERSIONED_PREFIX}/health/live`)
+      .expect(200);
+    await request(app.getHttpServer())
+      .get(`${API_VERSIONED_PREFIX}/health/ready`)
+      .expect(503);
+    await request(app.getHttpServer())
+      .get(`${API_VERSIONED_PREFIX}/health/ready`)
+      .expect(503);
   });
 
   it('When a cross-site safe request has no origin, then any starter-owned route accepts it', async () => {
@@ -282,7 +297,9 @@ describe('HTTP platform (e2e)', () => {
       }),
     );
 
-    await request(app.getHttpServer()).get('/validation-probe').expect(200);
+    await request(app.getHttpServer())
+      .get(`${API_VERSIONED_PREFIX}/validation-probe`)
+      .expect(200);
   });
 
   it('When an unhandled exception occurs, then the response hides infrastructure internals behind the generic error contract', async () => {
@@ -295,7 +312,7 @@ describe('HTTP platform (e2e)', () => {
     await app.init();
 
     const response = await request(app.getHttpServer())
-      .get('/failure-probe')
+      .get(`${API_VERSIONED_PREFIX}/failure-probe`)
       .expect(500);
     const error = response.body as StandardError & {
       message: string;
@@ -305,7 +322,7 @@ describe('HTTP platform (e2e)', () => {
     expect(error).toMatchObject({
       code: 'INTERNAL_SERVER_ERROR',
       message: 'An unexpected error occurred',
-      path: '/failure-probe',
+      path: `${API_VERSIONED_PREFIX}/failure-probe`,
       statusCode: 500,
     });
     expect(error.requestId).toEqual(expect.any(String));
@@ -356,6 +373,37 @@ describe('HTTP platform (e2e)', () => {
       required: ['data', 'meta'],
       type: 'object',
     });
+  });
+
+  it('When the application is not in production, then OpenAPI documents versioned starter routes and unversioned authentication routes', async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+    app = moduleFixture.createNestApplication();
+    configureApplication(app);
+    await app.init();
+
+    const response = await request(app.getHttpServer())
+      .get('/docs-json')
+      .expect(200);
+    const document = response.body as OpenAPIObject;
+    const paths = Object.keys(document.paths ?? {});
+
+    expect(paths).toEqual(
+      expect.arrayContaining([
+        `${API_VERSIONED_PREFIX}/users`,
+        `${API_VERSIONED_PREFIX}/users/me`,
+        `${API_VERSIONED_PREFIX}/users/{id}`,
+        `${API_VERSIONED_PREFIX}/health/live`,
+        `${API_VERSIONED_PREFIX}/health/ready`,
+        '/api/auth/sign-up/email',
+        '/api/auth/sign-in/email',
+        '/api/auth/sign-out',
+        '/api/auth/get-session',
+      ]),
+    );
+    expect(paths.some((path) => /^\/users(\/|$)/.test(path))).toBe(false);
+    expect(paths.some((path) => /^\/health(\/|$)/.test(path))).toBe(false);
   });
 
   it('When a required configuration value is absent, then application initialization fails', () => {

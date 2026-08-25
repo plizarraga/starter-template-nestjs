@@ -3,6 +3,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
 import { afterEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../../src/app.module';
+import { API_VERSIONED_PREFIX } from '../../src/platform/http/api-version';
 import { configureApplication } from '../../src/platform/http/configure-application';
 import { PrismaService } from '../../src/platform/prisma/prisma.service';
 
@@ -24,7 +25,9 @@ describe('health endpoints (e2e)', () => {
     configureApplication(app);
     await app.init();
 
-    const response = await request(app.getHttpServer()).get('/health/live');
+    const response = await request(app.getHttpServer()).get(
+      `${API_VERSIONED_PREFIX}/health/live`,
+    );
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({ status: 'ok' });
@@ -41,7 +44,9 @@ describe('health endpoints (e2e)', () => {
     configureApplication(app);
     await app.init();
 
-    const response = await request(app.getHttpServer()).get('/health/ready');
+    const response = await request(app.getHttpServer()).get(
+      `${API_VERSIONED_PREFIX}/health/ready`,
+    );
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
@@ -64,7 +69,9 @@ describe('health endpoints (e2e)', () => {
     configureApplication(app);
     await app.init();
 
-    const response = await request(app.getHttpServer()).get('/health/ready');
+    const response = await request(app.getHttpServer()).get(
+      `${API_VERSIONED_PREFIX}/health/ready`,
+    );
 
     expect(response.status).toBe(503);
     expect(response.body).toEqual({
