@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Role, User } from '../generated/prisma/client';
+import { Role } from '../generated/prisma/client';
 import { PlatformError } from '../platform/errors/platform-error';
 import {
   AdminUserPatch,
@@ -14,10 +14,6 @@ export type { PublicUser } from './users.repository';
 @Injectable()
 export class UsersService {
   constructor(private readonly users: UsersRepository) {}
-
-  findById(id: string): Promise<Pick<User, 'id' | 'role'> | null> {
-    return this.users.findById(id);
-  }
 
   findPublicById(id: string): Promise<PublicUser | null> {
     return this.users.findPublicById(id);

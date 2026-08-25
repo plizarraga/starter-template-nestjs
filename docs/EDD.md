@@ -26,8 +26,9 @@ as application-scoped global guards from a single provider array, so guard
 execution order does not depend on module initialization order. Feature modules
 never import a guard as a class; a route opts out of the session requirement
 with the metadata-only `@Public()` decorator instead.
-`AuthModule` mounts Better Auth and imports `UsersModule` one-directionally,
-because `SessionGuard` resolves the principal through `UsersService`.
+`AuthModule` mounts Better Auth independently of `UsersModule`: `SessionGuard`
+resolves the principal from the Better Auth session, while the current-user
+profile route resolves its separate public projection through `UsersService`.
 `UsersModule` has no auth-related imports.
 
 Controllers translate HTTP input to services. Services contain authorization
@@ -41,8 +42,9 @@ origins, native route limits, and a seven-day session with a one-day update
 interval. `configureApplication` mounts its handler at `/api/auth` before the
 Nest body parser.
 
-`SessionGuard` retrieves the Better Auth session from the request cookie and
-loads the matching user role, unless the route (or its controller) carries
+`SessionGuard` retrieves the Better Auth session from the request cookie,
+narrows its string role to the starter-owned `USER` or `ADMIN` domain, and
+rejects any unknown value unless the route (or its controller) carries
 `@Public()`. `RolesGuard` compares the resolved role with `@Roles()` metadata
 and rejects an unauthenticated request even on a route contradictorily marked
 both `@Public()` and `@Roles()` — a route always fails closed. Session-renewal

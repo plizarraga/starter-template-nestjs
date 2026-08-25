@@ -17,35 +17,24 @@ function context(request: unknown, response = {}): ExecutionContext {
 describe('SessionGuard', () => {
   it('When Better Auth has no session, then it rejects the request as unauthenticated', async () => {
     const auth = { getSession: vi.fn().mockResolvedValue(null) };
-    const users = { findById: vi.fn() };
     const reflector = { getAllAndOverride: vi.fn().mockReturnValue(undefined) };
-    const guard = new SessionGuard(
-      auth as never,
-      users as never,
-      reflector as never,
-    );
+    const guard = new SessionGuard(auth as never, reflector as never);
 
     await expect(guard.canActivate(context({}))).rejects.toMatchObject({
       code: 'UNAUTHORIZED',
     });
-    expect(users.findById).not.toHaveBeenCalled();
   });
 
-  it('When Better Auth validates a session, then it attaches the current application role', async () => {
+  it('When Better Auth validates a session with a domain role, then it attaches the principal without a second identity read', async () => {
     const auth = {
-      getSession: vi.fn().mockResolvedValue({ user: { id: 'user-1' } }),
-    };
-    const users = {
-      findById: vi.fn().mockResolvedValue({ id: 'user-1', role: Role.ADMIN }),
+      getSession: vi
+        .fn()
+        .mockResolvedValue({ user: { id: 'user-1', role: Role.ADMIN } }),
     };
     const reflector = { getAllAndOverride: vi.fn().mockReturnValue(undefined) };
     const request = {};
     const response = {};
-    const guard = new SessionGuard(
-      auth as never,
-      users as never,
-      reflector as never,
-    );
+    const guard = new SessionGuard(auth as never, reflector as never);
 
     await expect(guard.canActivate(context(request, response))).resolves.toBe(
       true,
@@ -56,18 +45,15 @@ describe('SessionGuard', () => {
     expect(auth.getSession).toHaveBeenCalledWith(request, response);
   });
 
-  it('When Better Auth validates a session for a deleted user, then it rejects the request as unauthenticated', async () => {
+  it('When Better Auth validates a session with an unknown role, then it rejects the request as unauthenticated', async () => {
     const auth = {
-      getSession: vi.fn().mockResolvedValue({ user: { id: 'deleted-user' } }),
+      getSession: vi
+        .fn()
+        .mockResolvedValue({ user: { id: 'user-1', role: 'SUPER_ADMIN' } }),
     };
-    const users = { findById: vi.fn().mockResolvedValue(null) };
     const reflector = { getAllAndOverride: vi.fn().mockReturnValue(undefined) };
     const request = {};
-    const guard = new SessionGuard(
-      auth as never,
-      users as never,
-      reflector as never,
-    );
+    const guard = new SessionGuard(auth as never, reflector as never);
 
     await expect(guard.canActivate(context(request))).rejects.toMatchObject({
       code: 'UNAUTHORIZED',

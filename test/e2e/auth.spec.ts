@@ -108,6 +108,36 @@ describe('Better Auth authentication (e2e)', () => {
       );
   });
 
+  it('When a session user is deleted, then its cascaded session no longer authenticates protected routes', async () => {
+    const email = 'deleted-session-user@example.com';
+    await request(app.getHttpServer())
+      .post('/api/auth/sign-up/email')
+      .send({ name: 'Deleted session user', email, password: 'password-123' })
+      .expect(200);
+    const login = await request(app.getHttpServer())
+      .post('/api/auth/sign-in/email')
+      .send({ email, password: 'password-123' })
+      .expect(200);
+    const cookie = login.headers['set-cookie']?.[0] ?? '';
+
+    const prisma = new PrismaClient({
+      adapter: new PrismaPg(
+        { connectionString: environment.databaseUrl },
+        { schema: environment.schema },
+      ),
+    });
+    await prisma.user.delete({ where: { email } });
+    await prisma.$disconnect();
+
+    await request(app.getHttpServer())
+      .get('/users/me')
+      .set('Cookie', cookie)
+      .expect(401)
+      .expect(({ body }: { body: { code: string } }) =>
+        expect(body.code).toBe('UNAUTHORIZED'),
+      );
+  });
+
   it('When an active session reaches its renewal age, then a protected route renews its cookie', async () => {
     await request(app.getHttpServer())
       .post('/api/auth/sign-up/email')
@@ -354,12 +384,9 @@ describe('Better Auth authentication (e2e)', () => {
       .expect(200);
 
     await request(app.getHttpServer())
-      .get('/users/me')
+      .get('/users')
       .set('Cookie', targetCookie)
-      .expect(200)
-      .expect(({ body }: { body: { role: string } }) =>
-        expect(body.role).toBe('ADMIN'),
-      );
+      .expect(200);
   });
 
   it('When the deployment topology is cross-site, then the session cookie carries SameSite=None, Secure, and Partitioned', async () => {

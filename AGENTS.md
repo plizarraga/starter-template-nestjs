@@ -45,10 +45,11 @@ application-scoped global guards, in that order, so a new feature module needs
 no auth-related imports to be protected. Mark a route or controller `@Public()`
 (`src/auth/decorators/public.decorator.ts`) to exempt it from the session
 requirement; `@Roles()` still restricts a route to a `Role`. The dependency
-direction is one-directional: `AuthModule` imports `UsersModule` because
-`SessionGuard` resolves the principal through `UsersService`. `UsersModule`
-imports nothing auth-related. The `authorization` folder holds `RolesGuard` and
-`@Roles()` and is where richer permission logic belongs later.
+direction keeps `AuthModule` and `UsersModule` independent: `SessionGuard`
+establishes the principal from the Better Auth session, while the current-user
+profile route resolves its separate public projection through `UsersService`.
+`UsersModule` imports nothing auth-related. The `authorization` folder holds
+`RolesGuard` and `@Roles()` and is where richer permission logic belongs later.
 
 Controllers translate HTTP input to services. Services own authorization rules.
 Repositories own datastore operations. Features use exported services rather
@@ -59,10 +60,11 @@ Express middleware ahead of the Nest router, so those requests never reach
 Nest guards and need no `@Public()` marker. Better Auth also owns
 email/password credentials and HTTP-only rolling sessions backed by
 PostgreSQL. The starter owns the `USER` and `ADMIN` role semantics.
-`SessionGuard` establishes the principal from the Better Auth session and
-current user record; `RolesGuard` applies `@Roles()` metadata and fails closed
-(rejects unauthenticated) if a route is contradictorily marked both `@Public()`
-and `@Roles()`. A role update affects the next protected request.
+`SessionGuard` establishes the principal from the Better Auth session after
+narrowing its role to `USER` or `ADMIN`; `RolesGuard` applies `@Roles()`
+metadata and fails closed (rejects unauthenticated) if a route is
+contradictorily marked both `@Public()` and `@Roles()`. A role update affects
+the next protected request.
 
 `PlatformError` is converted by the global exception filter into the standard
 starter-owned error shape. Do not construct error responses in controllers.

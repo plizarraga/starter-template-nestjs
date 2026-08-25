@@ -57,13 +57,6 @@ const publicUserSelect = {
 export class UsersRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  findById(id: string): Promise<Pick<User, 'id' | 'role'> | null> {
-    return this.prisma.user.findUnique({
-      select: { id: true, role: true },
-      where: { id },
-    });
-  }
-
   async findPublicById(id: string): Promise<PublicUser | null> {
     return this.prisma.user.findUnique({
       select: {

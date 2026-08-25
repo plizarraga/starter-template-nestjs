@@ -3,7 +3,6 @@ import { Reflector } from '@nestjs/core';
 import type { Request, Response } from 'express';
 import { Role } from '../generated/prisma/client';
 import { PlatformError } from '../platform/errors/platform-error';
-import { UsersService } from '../users/users.service';
 import { BetterAuthService } from './better-auth.service';
 import { IS_PUBLIC_KEY } from './decorators/public.decorator';
 
@@ -15,7 +14,6 @@ export type AuthenticatedRequest = Request & {
 export class SessionGuard implements CanActivate {
   constructor(
     private readonly auth: BetterAuthService,
-    private readonly users: UsersService,
     private readonly reflector: Reflector,
   ) {}
 
@@ -36,11 +34,11 @@ export class SessionGuard implements CanActivate {
       throw new PlatformError('UNAUTHORIZED');
     }
 
-    const user = await this.users.findById(session.user.id);
-    if (user === null) {
+    const { id, role } = session.user;
+    if (role !== Role.ADMIN && role !== Role.USER) {
       throw new PlatformError('UNAUTHORIZED');
     }
-    request.principal = user;
+    request.principal = { id, role };
     return true;
   }
 }
