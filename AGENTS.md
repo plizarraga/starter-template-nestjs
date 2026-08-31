@@ -157,9 +157,11 @@ changes its checksum, so any database that already applied the previous one —
 including your local development database — needs `pnpm exec prisma migrate
 reset` before `prisma migrate dev` will run again.
 
-Keep the hand-written DDL in `test/e2e/auth.spec.ts` in step with the schema.
-That suite creates its tables directly instead of applying migrations, so a new
-model is invisible to it until it is added there by hand.
+`createTestEnvironment` (`test/support/test-environment.ts`) applies the
+committed migrations to every throwaway container, so a suite always runs
+against the real schema and a new model needs no test-side change. Do not
+create tables by hand in a spec: a suite that defines its own shape can pass
+against a database the application would never have.
 
 ## Workflow
 
