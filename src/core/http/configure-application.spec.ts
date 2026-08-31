@@ -14,9 +14,8 @@ function makeApp(config: { getOrThrow: (key: string) => unknown }) {
     enableVersioning: vi.fn(),
     get: vi.fn().mockReturnValue({
       ...config,
-      generateOpenApiSchema: vi
-        .fn()
-        .mockResolvedValue({ components: { schemas: {} }, paths: {} }),
+      basePath: '/api/auth',
+      contributeOpenApiDocument: vi.fn().mockResolvedValue(undefined),
       handler: vi.fn(),
     }),
     set: vi.fn(),

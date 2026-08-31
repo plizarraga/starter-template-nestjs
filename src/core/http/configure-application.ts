@@ -1,14 +1,9 @@
 import { HttpStatus, ValidationPipe, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import {
-  DocumentBuilder,
-  SwaggerModule,
-  type OpenAPIObject,
-} from '@nestjs/swagger';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { json, urlencoded } from 'express';
-import { BetterAuthService } from '../../features/auth/better-auth.service';
 import { Logger } from 'nestjs-pino';
 import { Environment } from '../config/environment';
 import { HttpExceptionFilter } from '../errors/http-exception.filter';
@@ -18,6 +13,7 @@ import {
   API_GLOBAL_PREFIX,
   API_VERSION_PREFIX,
 } from './api-version';
+import { HTTP_EXTENSION, type HttpExtension } from './http-extension';
 
 export async function configureApplication(
   app: NestExpressApplication,
@@ -31,8 +27,10 @@ export async function configureApplication(
   app.set('trust proxy', config.getOrThrow<number>('TRUST_PROXY_HOPS'));
   app.use(requestIdMiddleware);
   app.use(helmet());
-  const authService = app.get(BetterAuthService);
-  app.use('/api/auth', authService.handler());
+  const httpExtension = app.get<HttpExtension>(HTTP_EXTENSION, {
+    strict: false,
+  });
+  app.use(httpExtension.basePath, httpExtension.handler());
   app.use(json());
   app.use(urlencoded({ extended: true }));
   app.enableCors({ credentials: true, origin: origins });
@@ -69,29 +67,7 @@ export async function configureApplication(
         .build(),
     );
 
-    const documentedAuthPaths = new Set([
-      '/sign-up/email',
-      '/sign-in/email',
-      '/sign-out',
-      '/get-session',
-    ]);
-    const authSchema = await authService.generateOpenApiSchema();
-    for (const [path, item] of Object.entries(authSchema.paths ?? {})) {
-      if (!documentedAuthPaths.has(path)) {
-        continue;
-      }
-      for (const operation of Object.values(
-        item as Record<string, { tags?: string[] }>,
-      )) {
-        operation.tags = ['auth'];
-      }
-      document.paths[`/api/auth${path}`] =
-        item as OpenAPIObject['paths'][string];
-    }
-    Object.assign(
-      document.components?.schemas ?? {},
-      authSchema.components?.schemas,
-    );
+    await httpExtension.contributeOpenApiDocument(document);
 
     SwaggerModule.setup('docs', app, document);
   }
