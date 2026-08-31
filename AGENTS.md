@@ -22,7 +22,7 @@ pnpm only. Do not use npm or yarn.
 | local PostgreSQL | `docker compose up -d` |
 | development | `pnpm start:dev` |
 | build | `pnpm build` |
-| typecheck | `npx tsc -p tsconfig.build.json --noEmit` |
+| typecheck | `pnpm typecheck` |
 | unit tests | `pnpm test` |
 | focused test | `pnpm test -- <pattern>` |
 | integration tests | `pnpm test:integration` |
@@ -102,8 +102,10 @@ new sensitive fields there.
 - Unit tests: `src/**/*.spec.ts`, using fakes only.
 - Integration tests: `test/integration/**/*.spec.ts`.
 - E2E tests: `test/e2e/**/*.spec.ts`.
-- `tsconfig.build.json` is the production typecheck target; the root tsconfig
-  includes known test-only noise.
+- `pnpm typecheck` type-checks `src/` and `test/` through the root tsconfig and
+  gates CI, so a type error in a spec file fails the pull request.
+  `tsconfig.build.json` narrows the same options to the production build and is
+  what `pnpm build` compiles.
 
 Test observable HTTP behavior at the Nest/PostgreSQL boundary. Keep unit tests
 for starter-owned business rules; do not mock or assert Better Auth internals.

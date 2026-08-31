@@ -137,6 +137,7 @@ variables from its deployment platform; `.env` is not loaded when
 | `pnpm start:dev` | Run Nest in watch mode. |
 | `pnpm build` | Build the production application. |
 | `pnpm lint` | Lint TypeScript and apply fixes. |
+| `pnpm typecheck` | Type-check application and test sources. |
 | `pnpm test` | Run unit tests. |
 | `pnpm test:integration` | Run PostgreSQL integration tests. |
 | `pnpm test:e2e` | Run HTTP E2E tests. |
