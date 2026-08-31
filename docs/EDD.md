@@ -21,13 +21,19 @@
 ## 2. Architecture
 
 `PlatformModule` is global and supplies configuration, logging, Prisma,
-request IDs, errors, health checks, and shared pagination contracts. Routing is secure by default:
-`AccessControlModule` registers `RateLimitGuard`, `SessionGuard`, `RolesGuard`,
-then `OriginGuard`
+request IDs, errors, and health checks; domain-agnostic building blocks such as
+the pagination contracts live in `src/shared/`. Routing is secure by default:
+`AppModule`, the composition root, registers `RateLimitGuard`, `SessionGuard`,
+`RolesGuard`, then `OriginGuard`
 as application-scoped global guards from a single provider array, so guard
 execution order does not depend on module initialization order. Feature modules
 never import a guard as a class; a route opts out of the session requirement
 with the metadata-only `@Public()` decorator instead.
+
+`src/core/` and `src/shared/` never import from `src/features/`. A feature that
+must join the request pipeline implements the `HttpExtension` port
+(`src/core/http/http-extension.ts`): core keeps ownership of middleware
+ordering, while the feature owns what is mounted and how it documents itself.
 `AuthModule` mounts Better Auth independently of `UsersModule`: `SessionGuard`
 resolves the principal from the Better Auth session, while the current-user
 profile route resolves its separate public projection through `UsersService`.
@@ -46,8 +52,10 @@ and is therefore unaffected by the global prefix and versioning.
 
 `BetterAuthService` configures the Prisma adapter, email/password, trusted
 origins, native route limits, and a seven-day session with a one-day update
-interval. `configureApplication` mounts its handler at `/api/auth` before the
-Nest body parser.
+interval. It implements the `HttpExtension` port, so `configureApplication`
+mounts its handler at `/api/auth` before the Nest body parser and lets it
+contribute its own routes to the OpenAPI document without core importing the
+feature.
 
 `SessionGuard` retrieves the Better Auth session from the request cookie,
 narrows its string role to the starter-owned `USER` or `ADMIN` domain, and

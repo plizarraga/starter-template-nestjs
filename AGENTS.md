@@ -39,14 +39,20 @@ must be available; the local Compose service is not required for those suites.
 ## Architecture
 
 `PlatformModule` is global and provides configuration, logging, Prisma, request
-IDs, errors, health checks, and shared pagination contracts
-(`src/core/pagination/`). Every route is protected by default:
-`AccessControlModule` registers `RateLimitGuard`, `SessionGuard`, `RolesGuard`,
-then `OriginGuard` as application-scoped global guards from a single provider
-array, in that order, so a new feature module needs no auth-related imports to
-be protected. Mark a route or controller `@Public()`
-(`src/features/auth/decorators/public.decorator.ts`) to exempt it from the
-session requirement; `@Roles()` still restricts a route to a `Role`. The
+IDs, errors, and health checks; domain-agnostic building blocks such as the
+pagination contracts live in `src/shared/`. Every route is protected by default:
+`AppModule`, the composition root, registers `RateLimitGuard`, `SessionGuard`,
+`RolesGuard`, then `OriginGuard` as application-scoped global guards from a
+single provider array, in that order, so a new feature module needs no
+auth-related imports to be protected. That order is the execution order and is
+load-bearing: `RolesGuard` reads the principal `SessionGuard` attaches to the
+request. Mark a route or controller `@Public()`
+(`src/shared/decorators/public.decorator.ts`) to exempt it from the
+session requirement; `@Roles()` still restricts a route to a `Role`. Nothing
+under `src/core/` or `src/shared/` imports from `src/features/`, so global
+infrastructure stays composable without any business feature; a feature that
+must join the request pipeline implements the `HttpExtension` port
+(`src/core/http/http-extension.ts`) instead. The
 dependency direction keeps `AuthModule` and `UsersModule` independent:
 `SessionGuard` establishes the principal from the Better Auth session, while
 the current-user profile route resolves its separate public projection through
@@ -60,7 +66,7 @@ Repositories own datastore operations. Features use exported services rather
 than another feature's repository. A paginated resource extends the shared
 `PaginationQueryDto` (page/limit) instead of redeclaring those fields, and
 computes its response metadata through the shared builder in
-`src/core/pagination/`.
+`src/shared/pagination/`.
 
 `configureApplication` sets the `api` global prefix and enables URI versioning
 with a `v1` default, so every starter-owned route is served under `/api/v1`.
