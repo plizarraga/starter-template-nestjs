@@ -13,6 +13,9 @@ import { RateLimitGuard } from './rate-limit.guard';
   imports: [
     AuthModule,
     ThrottlerModule.forRootAsync({
+      // Required so this object literal satisfies ThrottlerAsyncOptions'
+      // weak-type check under @nestjs/common 12; no imports are actually needed.
+      imports: [],
       inject: [ConfigService],
       useFactory: (config: ConfigService<Environment, true>) => [
         {

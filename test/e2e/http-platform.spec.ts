@@ -123,14 +123,14 @@ describe('HTTP platform (e2e)', () => {
     await app.init();
 
     const response = await request(app.getHttpServer())
-      .get('/missing')
+      .get(`${API_VERSIONED_PREFIX}/missing`)
       .expect(404);
     const error = response.body as StandardError;
 
     expect(response.headers['x-request-id']).toBe(error.requestId);
     expect(error).toMatchObject({
       code: 'NOT_FOUND',
-      path: '/missing',
+      path: `${API_VERSIONED_PREFIX}/missing`,
       statusCode: 404,
     });
   });
@@ -145,7 +145,7 @@ describe('HTTP platform (e2e)', () => {
     await app.init();
 
     const response = await request(app.getHttpServer())
-      .get('/missing')
+      .get(`${API_VERSIONED_PREFIX}/missing`)
       .set('X-Request-Id', requestId)
       .expect(404);
     const error = response.body as StandardError;

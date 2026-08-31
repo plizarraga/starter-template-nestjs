@@ -58,6 +58,8 @@ function toSupertestMethod(requestMethod: RequestMethod): SupertestMethod {
       return 'options';
     case RequestMethod.HEAD:
       return 'head';
+    case RequestMethod.ALL:
+      return 'get';
     default:
       throw new Error(
         `Unsupported HTTP method in route sweep: ${String(requestMethod)}`,
