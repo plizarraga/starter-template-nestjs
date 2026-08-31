@@ -12,7 +12,8 @@
 | Starter-owned API versioning | URI versioning at `v1` behind the `api` global prefix; Better Auth keeps its unversioned `/api/auth` mount |
 | Validation | Global Nest `ValidationPipe` and DTOs |
 | Logging | `nestjs-pino` with centralized redaction |
-| Starter-owned route limits | `@nestjs/throttler` with environment-configured limits; health probes exempt |
+| Starter-owned route limits | `@nestjs/throttler` with environment-configured limits; health probes exempt; in-memory store, so the limit is per replica |
+| Better Auth route limits | Better Auth's own limiter over `/api/auth`, with counters in PostgreSQL so credential limits hold across replicas |
 | Shutdown | Nest shutdown hooks drain HTTP work before Prisma disconnects |
 | Tests | Vitest and PostgreSQL Testcontainers |
 | API documentation | Swagger at `/docs` outside production |
@@ -104,7 +105,7 @@ the local values; production receives real values from the deployment platform.
 | `LOG_LEVEL` | Defaults to `debug` outside production and `info` in production |
 | `RATE_LIMIT_REGISTER_*` | Better Auth native sign-up limit override |
 | `RATE_LIMIT_LOGIN_*` | Better Auth native sign-in limit override |
-| `RATE_LIMIT_MAX` | Starter-owned route threshold; defaults to `100` |
+| `RATE_LIMIT_MAX` | Starter-owned route threshold per replica; defaults to `100` |
 | `RATE_LIMIT_TTL_SECONDS` | Starter-owned route window in seconds; defaults to `60` |
 | `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` | Required only by `seed:admin` |
 | `SEED_USER_EMAIL`, `SEED_USER_PASSWORD` | Required only by `seed:user` |
@@ -121,7 +122,20 @@ PostgreSQL and returns a minimal per-dependency status without exposing
 connection details. Both health routes bypass the application rate limiter so
 an orchestrator cannot mark a healthy instance unhealthy due to its own probe
 traffic. Better Auth continues to own its native route limits because its
-Express middleware runs before the Nest router. Nest shutdown hooks stop
+Express middleware runs before the Nest router.
+
+The two limiters keep their state in different places, deliberately.
+`@nestjs/throttler` defaults to an in-process store, so `RATE_LIMIT_MAX` is
+enforced per replica: _N_ replicas admit up to `N × RATE_LIMIT_MAX` requests per
+window. A shared store is a one-option change — the `storage` property of
+`ThrottlerModule.forRootAsync` accepts any `ThrottlerStorage` implementation —
+but it is left out of the starter so PostgreSQL stays the only runtime service
+and no request pays a network hop for flood protection. Better Auth is
+configured with `rateLimit.storage: 'database'` instead of its in-memory
+default, because credential brute-force limits must not multiply by replica
+count; its counters live in the `rate_limit` table. Better Auth enables its own
+rate limiting in production only, so the sign-in and sign-up limits are inert
+in development and test. Nest shutdown hooks stop
 accepting new work, drain in-flight requests, then call Prisma's module
 destruction hook to disconnect. Swagger documents starter-owned health and
 user routes under their versioned paths; Better Auth owns its native
@@ -152,3 +166,12 @@ before starting application replicas. Run `pnpm seed:admin` explicitly with
 administrator. Run `pnpm seed:user` with `SEED_USER_EMAIL` and
 `SEED_USER_PASSWORD` to create or promote a regular user the same way. The
 application never applies migrations at startup.
+
+`prisma/migrations/` deliberately holds a single `init` migration describing the
+current schema, rather than the incremental history that produced it. A template
+consumer starts from an empty database and was never at any intermediate point,
+so incremental migrations would be replay instructions for a history that is not
+theirs. A schema change is folded back into `init`; see AGENTS.md for the
+procedure and its verification step. Once a project is generated from this
+template, that constraint ends — real deployments accumulate ordinary
+incremental migrations from that point on.

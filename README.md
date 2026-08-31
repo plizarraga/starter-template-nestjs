@@ -100,6 +100,33 @@ Readiness reports PostgreSQL only. Apply migrations before deploying
 application replicas with `pnpm prisma:deploy`; the API process never runs
 migrations on startup.
 
+## Rate limiting
+
+Two independent layers, because two independent routers serve this API.
+
+| Layer | Covers | Configured by | State |
+| --- | --- | --- | --- |
+| `RateLimitGuard` (`@nestjs/throttler`) | Starter routes under `/api/v1`; health probes exempt | `RATE_LIMIT_MAX`, `RATE_LIMIT_TTL_SECONDS` | In-process memory |
+| Better Auth | Native routes under `/api/auth`; sign-in and sign-up have their own limits | `RATE_LIMIT_LOGIN_*`, `RATE_LIMIT_REGISTER_*` | PostgreSQL (`rate_limit` table) |
+
+Better Auth stores its counters in PostgreSQL, so credential brute-force limits
+hold across every API replica. Better Auth also enables its own rate limiting
+in production only — the configured sign-in and sign-up limits do not apply in
+development.
+
+> [!IMPORTANT]
+> `RATE_LIMIT_MAX` is enforced **per process**. `@nestjs/throttler` keeps its
+> counters in memory, so running _N_ replicas lets a client make up to
+> `N × RATE_LIMIT_MAX` requests per window. Size the value per replica, or
+> enforce the real ceiling at the ingress/load balancer.
+>
+> To make it a true cluster-wide limit, pass a shared `storage` to
+> `ThrottlerModule.forRootAsync` in
+> [`src/core/access-control/access-control.module.ts`](./src/core/access-control/access-control.module.ts).
+> Any implementation of the `ThrottlerStorage` interface works — for example
+> `@nest-lab/throttler-storage-redis`. That is the single seam; nothing else
+> changes.
+
 ## Configuration
 
 Copy `.env.example` for local values. Production receives environment
@@ -117,6 +144,8 @@ variables from its deployment platform; `.env` is not loaded when
 | `DEPLOYMENT_TOPOLOGY` | No | `same-site` or `cross-site`; defaults to `same-site`. `same-site` keeps `SameSite=Lax` cookies for a client on the same registrable domain. `cross-site` issues `SameSite=None; Secure; Partitioned` cookies for a client on a different site, at the cost of the browser's own CSRF protection on starter-owned routes. |
 | `PUBLIC_BASE_URL` | Yes | Absolute `http`/`https` base URL of this API. Must be `https` when `DEPLOYMENT_TOPOLOGY=cross-site` or `NODE_ENV=production`. |
 | `LOG_LEVEL` | No | Pino level; defaults to `debug` outside production and `info` in production. |
+| `RATE_LIMIT_MAX` | No | Starter-owned route request limit per client, **per process**; defaults to `100`. Health probes are exempt. See [Rate limiting](#rate-limiting). |
+| `RATE_LIMIT_TTL_SECONDS` | No | Starter-owned route limit window in seconds; defaults to `60`. |
 | `RATE_LIMIT_REGISTER_MAX` | No | Native Better Auth sign-up request limit; defaults to `5`. |
 | `RATE_LIMIT_REGISTER_TTL_SECONDS` | No | Sign-up limit window in seconds; defaults to `3600`. |
 | `RATE_LIMIT_LOGIN_MAX` | No | Native Better Auth sign-in request limit; defaults to `10`. |

@@ -52,6 +52,13 @@ function createAuthInstance(
     emailAndPassword: { enabled: true },
     logger: { disabled: true },
     rateLimit: {
+      // Better Auth enables its own limiter in production only, so these rules
+      // are deliberately inert in development and test. Do not set `enabled`
+      // to force them on locally without also raising the limits — the E2E
+      // suite signs in repeatedly against a single container.
+      // PostgreSQL rather than the default in-memory store, so sign-in and
+      // sign-up limits are shared by every API replica.
+      storage: 'database',
       customRules: {
         '/sign-in/email': {
           max: config.getOrThrow<number>('RATE_LIMIT_LOGIN_MAX'),

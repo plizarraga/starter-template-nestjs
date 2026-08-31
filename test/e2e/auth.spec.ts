@@ -45,6 +45,9 @@ describe('Better Auth authentication (e2e)', () => {
     await prisma.$executeRawUnsafe(
       `CREATE TABLE "${environment.schema}"."verification" ("id" TEXT PRIMARY KEY, "identifier" TEXT NOT NULL, "value" TEXT NOT NULL, "expiresAt" TIMESTAMPTZ NOT NULL, "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMPTZ NOT NULL)`,
     );
+    await prisma.$executeRawUnsafe(
+      `CREATE TABLE "${environment.schema}"."rate_limit" ("id" TEXT PRIMARY KEY, "key" TEXT NOT NULL UNIQUE, "count" INTEGER NOT NULL, "lastRequest" BIGINT NOT NULL)`,
+    );
     await prisma.$disconnect();
     process.env = {
       ...originalEnvironment,

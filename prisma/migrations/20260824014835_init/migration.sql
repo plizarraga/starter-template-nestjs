@@ -1,3 +1,6 @@
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "public";
+
 -- CreateEnum
 CREATE TYPE "Role" AS ENUM ('USER', 'ADMIN');
 
@@ -50,6 +53,16 @@ CREATE TABLE "account" (
 );
 
 -- CreateTable
+CREATE TABLE "rate_limit" (
+    "id" TEXT NOT NULL,
+    "key" TEXT NOT NULL,
+    "count" INTEGER NOT NULL,
+    "lastRequest" BIGINT NOT NULL,
+
+    CONSTRAINT "rate_limit_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "verification" (
     "id" TEXT NOT NULL,
     "identifier" TEXT NOT NULL,
@@ -65,6 +78,15 @@ CREATE TABLE "verification" (
 CREATE UNIQUE INDEX "user_email_key" ON "user"("email");
 
 -- CreateIndex
+CREATE INDEX "user_role_idx" ON "user"("role");
+
+-- CreateIndex
+CREATE INDEX "user_createdAt_idx" ON "user"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "user_updatedAt_idx" ON "user"("updatedAt");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "session_token_key" ON "session"("token");
 
 -- CreateIndex
@@ -75,6 +97,9 @@ CREATE INDEX "account_userId_idx" ON "account"("userId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "account_issuer_accountId_key" ON "account"("issuer", "accountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "rate_limit_key_key" ON "rate_limit"("key");
 
 -- CreateIndex
 CREATE INDEX "verification_identifier_idx" ON "verification"("identifier");
