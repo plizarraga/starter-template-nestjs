@@ -57,7 +57,8 @@ both `@Public()` and `@Roles()` — a route always fails closed. Session-renewal
 cookies emitted by Better Auth are forwarded to the protected route response.
 
 `DEPLOYMENT_TOPOLOGY` declares where the Authenticated Client is deployed, not
-a cookie policy, and `deriveCookieAttributes` (`src/auth/better-auth.service.ts`)
+a cookie policy, and `deriveCookieAttributes`
+(`src/features/auth/better-auth.service.ts`)
 derives every session cookie attribute from it: `same-site` keeps
 `SameSite=Lax` with `Secure` only in production (today's behavior); `cross-site`
 issues `SameSite=None; Secure; Partitioned; HttpOnly`, because `SameSite=None`
@@ -137,9 +138,9 @@ creates an isolated PostgreSQL container and schema. The critical seams are:
 | Native authentication and session cookies | `test/e2e/auth.spec.ts` |
 | Rolling protected-route renewal | `test/e2e/auth.spec.ts` |
 | Administrator authorization | `test/e2e/auth.spec.ts` |
-| Final-administrator rule | `src/users/users.service.spec.ts` |
+| Final-administrator rule | `src/features/users/users.service.spec.ts` |
 | Health and platform failures | `test/e2e/health.spec.ts`, `test/e2e/http-platform.spec.ts` |
-| Sensitive log redaction | `test/e2e/logging.spec.ts`, `src/platform/logging/platform-logger.spec.ts` |
+| Sensitive log redaction | `test/e2e/logging.spec.ts`, `src/core/logging/platform-logger.spec.ts` |
 
 ## 7. Operations
 

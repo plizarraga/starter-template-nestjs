@@ -40,25 +40,27 @@ must be available; the local Compose service is not required for those suites.
 
 `PlatformModule` is global and provides configuration, logging, Prisma, request
 IDs, errors, health checks, and shared pagination contracts
-(`src/platform/pagination/`). Every route is protected by default:
+(`src/core/pagination/`). Every route is protected by default:
 `AccessControlModule` registers `RateLimitGuard`, `SessionGuard`, `RolesGuard`,
 then `OriginGuard` as application-scoped global guards from a single provider
 array, in that order, so a new feature module needs no auth-related imports to
 be protected. Mark a route or controller `@Public()`
-(`src/auth/decorators/public.decorator.ts`) to exempt it from the session
-requirement; `@Roles()` still restricts a route to a `Role`. The dependency
-direction keeps `AuthModule` and `UsersModule` independent: `SessionGuard`
-establishes the principal from the Better Auth session, while the current-user
-profile route resolves its separate public projection through `UsersService`.
-`UsersModule` imports nothing auth-related. The `authorization` folder holds
-`RolesGuard` and `@Roles()` and is where richer permission logic belongs later.
+(`src/features/auth/decorators/public.decorator.ts`) to exempt it from the
+session requirement; `@Roles()` still restricts a route to a `Role`. The
+dependency direction keeps `AuthModule` and `UsersModule` independent:
+`SessionGuard` establishes the principal from the Better Auth session, while
+the current-user profile route resolves its separate public projection through
+`UsersService`. `UsersModule` imports nothing auth-related. `RolesGuard` and
+`@Roles()` live under `src/features/auth/guards/` and
+`src/features/auth/decorators/`, and are where richer permission logic belongs
+later.
 
 Controllers translate HTTP input to services. Services own authorization rules.
 Repositories own datastore operations. Features use exported services rather
 than another feature's repository. A paginated resource extends the shared
 `PaginationQueryDto` (page/limit) instead of redeclaring those fields, and
 computes its response metadata through the shared builder in
-`src/platform/pagination/`.
+`src/core/pagination/`.
 
 `configureApplication` sets the `api` global prefix and enables URI versioning
 with a `v1` default, so every starter-owned route is served under `/api/v1`.
@@ -78,11 +80,11 @@ the next protected request.
 Authenticated Client is deployed relative to the API, and drives every session
 cookie attribute together (`SameSite`, `Secure`, `Partitioned`) rather than as
 independent knobs — see `deriveCookieAttributes` in
-`src/auth/better-auth.service.ts`. `cross-site` surrenders the browser's own
-`SameSite=Lax` CSRF protection, so `OriginGuard` restores it for starter-owned
-state-changing requests (`POST`/`PUT`/`PATCH`/`DELETE`) by delegating to
-`OriginValidator` (`src/platform/http/origin-validator.service.ts`); it is
-inert for safe methods and under `same-site`. `PUBLIC_BASE_URL` is required
+`src/features/auth/better-auth.service.ts`. `cross-site` surrenders the
+browser's own `SameSite=Lax` CSRF protection, so `OriginGuard` restores it for
+starter-owned state-changing requests (`POST`/`PUT`/`PATCH`/`DELETE`) by
+delegating to `OriginValidator` (`src/core/http/origin-validator.service.ts`);
+it is inert for safe methods and under `same-site`. `PUBLIC_BASE_URL` is required
 and must be `https` when `DEPLOYMENT_TOPOLOGY=cross-site` or
 `NODE_ENV=production`; an invalid combination fails boot rather than issuing a
 cookie the browser will reject. Starter-owned routes are rate limited via
@@ -92,7 +94,7 @@ before Prisma disconnects.
 
 `PlatformError` is converted by the global exception filter into the standard
 starter-owned error shape. Do not construct error responses in controllers.
-Pino redaction lives in `src/platform/logging/platform-logger.module.ts`; add
+Pino redaction lives in `src/core/logging/platform-logger.module.ts`; add
 new sensitive fields there.
 
 ## Testing
@@ -108,7 +110,7 @@ for starter-owned business rules; do not mock or assert Better Auth internals.
 
 ## Configuration
 
-Joi validates configuration in `src/platform/config/environment.ts`, including
+Joi validates configuration in `src/core/config/environment.ts`, including
 combined checks such as `DEPLOYMENT_TOPOLOGY`/`PUBLIC_BASE_URL`/`NODE_ENV`.
 Copy `.env.example` to `.env` for local development. Production receives
 environment variables from the deployment platform. PostgreSQL is the only
