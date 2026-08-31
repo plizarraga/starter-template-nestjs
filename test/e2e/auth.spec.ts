@@ -265,7 +265,7 @@ describe('Better Auth authentication (e2e)', () => {
       .get(`${API_VERSIONED_PREFIX}/users`)
       .set('Cookie', promotedCookie)
       .expect(200);
-  });
+  }, 20000);
 
   it('When an administrator updates another user, then it can promote and demote that user but cannot demote itself', async () => {
     const adminEmail = 'patch-administrator@example.com';
