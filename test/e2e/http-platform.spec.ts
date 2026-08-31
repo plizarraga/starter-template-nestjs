@@ -50,7 +50,7 @@ async function createApplication(
     .overrideProvider(ConfigService)
     .useValue(config)
     .compile();
-  const app = moduleFixture.createNestApplication();
+  const app = moduleFixture.createNestApplication<NestExpressApplication>();
   await configureApplication(app);
   await app.init();
   return app;

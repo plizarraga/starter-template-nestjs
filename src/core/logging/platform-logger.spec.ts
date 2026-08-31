@@ -28,7 +28,7 @@ describe('platform logger', () => {
 
     try {
       const { pinoRedaction: redaction } =
-        (await import('./platform-logger.module')) as {
+        (await import('./platform-logger.module.js')) as {
           pinoRedaction: { censor: string };
         };
       expect(redaction.censor).toBe('[Redacted]');

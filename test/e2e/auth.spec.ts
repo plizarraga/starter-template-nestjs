@@ -53,7 +53,7 @@ describe('Better Auth authentication (e2e)', () => {
       DATABASE_URL: environment.databaseUrl,
     };
     const { AppModule } =
-      (await import('../../src/app.module')) as typeof import('../../src/app.module');
+      (await import('../../src/app.module.js')) as typeof import('../../src/app.module.js');
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
@@ -404,9 +404,9 @@ describe('Better Auth authentication (e2e)', () => {
     // required to pick up the mutated env for this second application.
     vi.resetModules();
     const { AppModule: CrossSiteAppModule } =
-      (await import('../../src/app.module')) as typeof import('../../src/app.module');
+      (await import('../../src/app.module.js')) as typeof import('../../src/app.module.js');
     const { configureApplication: configureCrossSiteApplication } =
-      (await import('../../src/core/http/configure-application')) as typeof import('../../src/core/http/configure-application');
+      (await import('../../src/core/http/configure-application.js')) as typeof import('../../src/core/http/configure-application.js');
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [CrossSiteAppModule],
     }).compile();
