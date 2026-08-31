@@ -3,9 +3,9 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
 import { afterEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../../src/app.module';
-import { API_VERSIONED_PREFIX } from '../../src/platform/http/api-version';
-import { configureApplication } from '../../src/platform/http/configure-application';
-import { PrismaService } from '../../src/platform/prisma/prisma.service';
+import { API_VERSIONED_PREFIX } from '../../src/core/http/api-version';
+import { configureApplication } from '../../src/core/http/configure-application';
+import { PrismaService } from '../../src/core/prisma/prisma.service';
 
 describe('health endpoints (e2e)', () => {
   let app: NestExpressApplication;

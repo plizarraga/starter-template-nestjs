@@ -7,13 +7,13 @@ import request from 'supertest';
 import { IsEmail } from 'class-validator';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../../src/app.module';
-import { Public } from '../../src/auth/decorators/public.decorator';
+import { Public } from '../../src/features/auth/decorators/public.decorator';
 import {
   Environment,
   validateEnvironment,
-} from '../../src/platform/config/environment';
-import { API_VERSIONED_PREFIX } from '../../src/platform/http/api-version';
-import { configureApplication } from '../../src/platform/http/configure-application';
+} from '../../src/core/config/environment';
+import { API_VERSIONED_PREFIX } from '../../src/core/http/api-version';
+import { configureApplication } from '../../src/core/http/configure-application';
 import { defaultEnvironment } from '../support/default-environment';
 
 class ValidationProbeDto {

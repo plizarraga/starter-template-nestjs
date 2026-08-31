@@ -14,7 +14,7 @@ describe('platform logging (e2e)', () => {
   beforeAll(async () => {
     process.env = { ...originalEnvironment, ...defaultEnvironment };
     const { pinoRedaction } =
-      (await import('../../src/platform/logging/platform-logger.module')) as typeof import('../../src/platform/logging/platform-logger.module');
+      (await import('../../src/core/logging/platform-logger.module')) as typeof import('../../src/core/logging/platform-logger.module');
     const { Logger: PinoNestLogger } =
       (await import('nestjs-pino')) as typeof import('nestjs-pino');
     const captureStream = new Writable({

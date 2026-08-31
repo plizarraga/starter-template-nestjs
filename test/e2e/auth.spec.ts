@@ -6,8 +6,8 @@ import { PrismaClient } from '../../src/generated/prisma/client';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { API_VERSIONED_PREFIX } from '../../src/platform/http/api-version';
-import { configureApplication } from '../../src/platform/http/configure-application';
+import { API_VERSIONED_PREFIX } from '../../src/core/http/api-version';
+import { configureApplication } from '../../src/core/http/configure-application';
 import { defaultEnvironment } from '../support/default-environment';
 import {
   createTestEnvironment,
@@ -406,7 +406,7 @@ describe('Better Auth authentication (e2e)', () => {
     const { AppModule: CrossSiteAppModule } =
       (await import('../../src/app.module')) as typeof import('../../src/app.module');
     const { configureApplication: configureCrossSiteApplication } =
-      (await import('../../src/platform/http/configure-application')) as typeof import('../../src/platform/http/configure-application');
+      (await import('../../src/core/http/configure-application')) as typeof import('../../src/core/http/configure-application');
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [CrossSiteAppModule],
     }).compile();

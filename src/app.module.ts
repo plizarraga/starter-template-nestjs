@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { AccessControlModule } from './access-control/access-control.module';
-import { NotFoundFallbackModule } from './platform/http/not-found-fallback.module';
-import { PlatformModule } from './platform/platform.module';
-import { UsersModule } from './users/users.module';
+import { AccessControlModule } from './core/access-control/access-control.module';
+import { NotFoundFallbackModule } from './core/http/not-found-fallback.module';
+import { PlatformModule } from './core/platform.module';
+import { UsersModule } from './features/users/users.module';
 
 @Module({
   imports: [
