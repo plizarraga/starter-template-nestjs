@@ -24,7 +24,8 @@
     "test:watch": "vitest --project=unit",
     "test:integration": "vitest run --project=integration",
     "test:e2e": "vitest run --project=e2e",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "verify:boundaries": "bash scripts/verify-boundaries.sh"
   },
   "dependencies": {
     "@better-auth/prisma-adapter": "^1.7.2",

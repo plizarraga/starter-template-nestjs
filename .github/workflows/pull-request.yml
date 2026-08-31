@@ -31,6 +31,9 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Verify core does not depend on features
+        run: pnpm verify:boundaries
+
       - name: Typecheck
         run: pnpm typecheck
 
