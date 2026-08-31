@@ -10,7 +10,9 @@ export default defineConfig({
         test: {
           name: 'unit',
           environment: 'node',
-          include: ['src/**/*.spec.ts'],
+          // prisma/ holds the seed tooling and its colocated spec, which is a
+          // unit test like any other and must not fall out of the suite.
+          include: ['src/**/*.spec.ts', 'prisma/**/*.spec.ts'],
           setupFiles: ['test/support/default-environment.ts'],
         },
       },
