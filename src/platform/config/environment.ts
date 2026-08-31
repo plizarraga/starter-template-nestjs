@@ -35,6 +35,7 @@ const environmentSchema = Joi.object<Environment>({
     otherwise: Joi.string()
       .valid('trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent')
       .default('debug'),
+    // oxlint-disable-next-line unicorn/no-thenable -- Joi.when()'s config API requires a `then` key; it is not a thenable.
     then: Joi.string()
       .valid('trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent')
       .default('info'),

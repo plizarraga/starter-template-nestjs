@@ -5,7 +5,7 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { Logger } from 'nestjs-pino';
 import { errorDefinitions, PlatformError } from './platform-error';
 import { RequestWithId } from '../request-id/request-id.middleware';
