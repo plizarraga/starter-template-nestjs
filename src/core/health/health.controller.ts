@@ -6,7 +6,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import type { Response } from 'express';
-import { Public } from '../../features/auth/decorators/public.decorator';
+import { Public } from '../../shared/decorators/public.decorator';
 import {
   LivenessResponseDto,
   ReadinessResponseDto,

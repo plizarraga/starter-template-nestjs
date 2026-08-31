@@ -1,7 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Role } from '../../../generated/prisma/client';
-import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { PinoLogger } from 'nestjs-pino';
 import { PlatformError } from '../../../core/errors/platform-error';
 import { AuthenticatedRequest } from '../session.guard';
 import { ROLES_KEY } from '../decorators/roles.decorator';
@@ -10,7 +10,11 @@ import { ROLES_KEY } from '../decorators/roles.decorator';
 export class RolesGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
-    @InjectPinoLogger(RolesGuard.name) private readonly logger: PinoLogger,
+    // Plain PinoLogger, not @InjectPinoLogger: the decorated-token variant is
+    // only registered if this file is evaluated before LoggerModule.forRoot(),
+    // which makes resolution depend on ES module evaluation order. The class
+    // name travels in the log payload instead.
+    private readonly logger: PinoLogger,
   ) {}
 
   canActivate(context: ExecutionContext): boolean {
@@ -29,6 +33,7 @@ export class RolesGuard implements CanActivate {
     }
     if (!requiredRoles.includes(principal.role)) {
       this.logger.warn({
+        context: RolesGuard.name,
         event: 'authz.denied',
         path: request.originalUrl,
         requiredRoles,

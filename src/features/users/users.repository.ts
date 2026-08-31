@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, Role, User } from '../../generated/prisma/client';
 import { PlatformError } from '../../core/errors/platform-error';
-import { buildPaginationMeta } from '../../core/pagination/pagination-metadata';
-import { PaginationMeta } from '../../core/pagination/pagination-metadata';
+import { buildPaginationMeta } from '../../shared/pagination/pagination-metadata';
+import { PaginationMeta } from '../../shared/pagination/pagination-metadata';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { SortField, SortOrder } from './dto/list-users-query.dto';
 

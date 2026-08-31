@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client';
-import { seedAdmin } from '../src/core/prisma/admin-seed';
+import { seedAdmin } from './admin-seed';
 
 async function main(): Promise<void> {
   const email = process.env.SEED_ADMIN_EMAIL;

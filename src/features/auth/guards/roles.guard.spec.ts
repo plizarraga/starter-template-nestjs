@@ -50,6 +50,7 @@ describe('RolesGuard', () => {
       expect.objectContaining({ code: 'FORBIDDEN' }),
     );
     expect(logger.warn).toHaveBeenCalledWith({
+      context: 'RolesGuard',
       event: 'authz.denied',
       path: '/users',
       requiredRoles: [Role.ADMIN],

@@ -1,6 +1,6 @@
 import { Transform } from 'class-transformer';
 import { IsIn, IsOptional, IsString } from 'class-validator';
-import { PaginationQueryDto } from '../../../core/pagination/pagination-query.dto';
+import { PaginationQueryDto } from '../../../shared/pagination/pagination-query.dto';
 
 export const sortFields = ['email', 'role', 'createdAt', 'updatedAt'] as const;
 export type SortField = (typeof sortFields)[number];

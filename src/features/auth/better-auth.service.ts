@@ -4,10 +4,23 @@ import { ConfigService } from '@nestjs/config';
 import { betterAuth } from 'better-auth';
 import { fromNodeHeaders, toNodeHandler } from 'better-auth/node';
 import { openAPI } from 'better-auth/plugins';
+import type { OpenAPIObject } from '@nestjs/swagger';
 import type { Request, RequestHandler, Response } from 'express';
 import { Role } from '../../generated/prisma/client';
 import { DeploymentTopology, Environment } from '../../core/config/environment';
+import { API_GLOBAL_PREFIX } from '../../core/http/api-version';
+import type { HttpExtension } from '../../core/http/http-extension';
 import { PrismaService } from '../../core/prisma/prisma.service';
+
+export const AUTH_BASE_PATH = `/${API_GLOBAL_PREFIX}/auth`;
+
+/** Better Auth routes this starter documents in its OpenAPI schema. */
+const DOCUMENTED_AUTH_PATHS = new Set([
+  '/sign-up/email',
+  '/sign-in/email',
+  '/sign-out',
+  '/get-session',
+]);
 
 type CookieAttributes = {
   httpOnly: true;
@@ -92,7 +105,9 @@ function createAuthInstance(
 }
 
 @Injectable()
-export class BetterAuthService {
+export class BetterAuthService implements HttpExtension {
+  readonly basePath = AUTH_BASE_PATH;
+
   private readonly instance: ReturnType<typeof createAuthInstance>;
 
   constructor(config: ConfigService<Environment, true>, prisma: PrismaService) {
@@ -105,6 +120,26 @@ export class BetterAuthService {
 
   generateOpenApiSchema() {
     return this.instance.api.generateOpenAPISchema();
+  }
+
+  async contributeOpenApiDocument(document: OpenAPIObject): Promise<void> {
+    const schema = await this.generateOpenApiSchema();
+    for (const [path, item] of Object.entries(schema.paths ?? {})) {
+      if (!DOCUMENTED_AUTH_PATHS.has(path)) {
+        continue;
+      }
+      for (const operation of Object.values(
+        item as Record<string, { tags?: string[] }>,
+      )) {
+        operation.tags = ['auth'];
+      }
+      document.paths[`${this.basePath}${path}`] =
+        item as OpenAPIObject['paths'][string];
+    }
+    Object.assign(
+      document.components?.schemas ?? {},
+      schema.components?.schemas,
+    );
   }
 
   async getSession(request: Request, response: Response) {
