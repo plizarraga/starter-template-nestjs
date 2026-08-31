@@ -28,6 +28,7 @@ pnpm only. Do not use npm or yarn.
 | integration tests | `pnpm test:integration` |
 | E2E tests | `pnpm test:e2e` |
 | lint | `pnpm lint` |
+| architecture boundary | `pnpm verify:boundaries` |
 | generate Prisma client | `pnpm prisma:generate` |
 | migration | `pnpm prisma:migrate` |
 | apply migrations | `pnpm prisma:deploy` |
@@ -52,7 +53,8 @@ session requirement; `@Roles()` still restricts a route to a `Role`. Nothing
 under `src/core/` or `src/shared/` imports from `src/features/`, so global
 infrastructure stays composable without any business feature; a feature that
 must join the request pipeline implements the `HttpExtension` port
-(`src/core/http/http-extension.ts`) instead. The
+(`src/core/http/http-extension.ts`) instead. `pnpm verify:boundaries` enforces
+that rule and runs in CI, so it fails the build rather than the code review. The
 dependency direction keeps `AuthModule` and `UsersModule` independent:
 `SessionGuard` establishes the principal from the Better Auth session, while
 the current-user profile route resolves its separate public projection through

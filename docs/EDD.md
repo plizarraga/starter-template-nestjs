@@ -34,6 +34,11 @@ with the metadata-only `@Public()` decorator instead.
 must join the request pipeline implements the `HttpExtension` port
 (`src/core/http/http-extension.ts`): core keeps ownership of middleware
 ordering, while the feature owns what is mounted and how it documents itself.
+
+`scripts/verify-boundaries.sh` (`pnpm verify:boundaries`) enforces that
+direction and runs as its own CI step. It fails on a violation and also fails
+when the search itself errors, so a missing directory can never be mistaken
+for a clean result.
 `AuthModule` mounts Better Auth independently of `UsersModule`: `SessionGuard`
 resolves the principal from the Better Auth session, while the current-user
 profile route resolves its separate public projection through `UsersService`.
