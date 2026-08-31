@@ -135,6 +135,25 @@ describe('HTTP platform (e2e)', () => {
     });
   });
 
+  it('When an unknown multi-segment route is requested, then the named wildcard fallback still matches it', async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+    app = moduleFixture.createNestApplication();
+    await configureApplication(app);
+    await app.init();
+
+    const path = `${API_VERSIONED_PREFIX}/missing/nested/deep`;
+    const response = await request(app.getHttpServer()).get(path).expect(404);
+    const error = response.body as StandardError;
+
+    expect(error).toMatchObject({
+      code: 'NOT_FOUND',
+      path,
+      statusCode: 404,
+    });
+  });
+
   it('When a trusted request ID is supplied, then it is propagated to the response and error', async () => {
     const requestId = 'upstream-request-42';
     const moduleFixture: TestingModule = await Test.createTestingModule({
