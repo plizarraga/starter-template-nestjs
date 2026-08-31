@@ -4,7 +4,7 @@
 
 | Concern | Decision |
 | --- | --- |
-| Runtime | Node.js 24, TypeScript, NestJS 11 |
+| Runtime | Node.js 24, TypeScript, NestJS 12 |
 | Identity | Better Auth 1.7 native email/password API |
 | Session storage | Better Auth sessions in PostgreSQL |
 | Persistence | Prisma 7 with the PostgreSQL driver adapter |

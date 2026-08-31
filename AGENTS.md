@@ -2,7 +2,7 @@
 
 ## Repository
 
-This is a NestJS 11 TypeScript backend. The product documents are:
+This is a NestJS 12 TypeScript backend. The product documents are:
 
 - `docs/PRD.md` - product requirements.
 - `docs/PRODUCT_SPEC.md` - observable Better Auth and starter-owned API
