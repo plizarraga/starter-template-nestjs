@@ -236,14 +236,18 @@ describe('Better Auth authentication (e2e)', () => {
     ).toMatchObject({ role: 'ADMIN' });
     await prisma.$disconnect();
 
-    const [regularLogin, adminLogin, promotedLogin] = await Promise.all(
-      [regularEmail, adminEmail, promotedEmail].map((email) =>
-        request(app.getHttpServer())
-          .post('/api/auth/sign-in/email')
-          .send({ email, password: 'password-123' })
-          .expect(200),
-      ),
-    );
+    // A tuple literal rather than `.map()`, so `Promise.all` resolves to a
+    // fixed-length tuple and each login is typed as present.
+    const signIn = (email: string) =>
+      request(app.getHttpServer())
+        .post('/api/auth/sign-in/email')
+        .send({ email, password: 'password-123' })
+        .expect(200);
+    const [regularLogin, adminLogin, promotedLogin] = await Promise.all([
+      signIn(regularEmail),
+      signIn(adminEmail),
+      signIn(promotedEmail),
+    ]);
     const regularCookie = regularLogin.headers['set-cookie']?.[0] ?? '';
     const adminCookie = adminLogin.headers['set-cookie']?.[0] ?? '';
     const promotedCookie = promotedLogin.headers['set-cookie']?.[0] ?? '';
