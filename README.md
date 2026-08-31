@@ -174,6 +174,7 @@ variables from its deployment platform; `.env` is not loaded when
 | `pnpm build` | Build the production application. |
 | `pnpm lint` | Lint TypeScript and apply fixes. |
 | `pnpm typecheck` | Type-check application and test sources. |
+| `pnpm verify:boundaries` | Verify `src/core/` and `src/shared/` do not import from `src/features/`. |
 | `pnpm test` | Run unit tests. |
 | `pnpm test:integration` | Run PostgreSQL integration tests. |
 | `pnpm test:e2e` | Run HTTP E2E tests. |
@@ -193,11 +194,19 @@ suites.
 The application is a modular monolith. Controllers translate HTTP input to
 services; services own authorization-relevant rules; repositories own
 PostgreSQL access. `PlatformModule` is global and provides configuration,
-logging, Prisma, request IDs, errors, health checks, and shared pagination
-contracts. Better Auth owns native authentication while the starter owns the
-meaning and enforcement of `USER` and `ADMIN` roles, kept independent through
-`AccessControlModule`'s global guard chain (`RateLimitGuard` →
-`SessionGuard` → `RolesGuard` → `OriginGuard`).
+logging, Prisma, request IDs, errors, and health checks; domain-agnostic
+building blocks such as the pagination contracts live in `src/shared/`. Better
+Auth owns native authentication while the starter owns the meaning and
+enforcement of `USER` and `ADMIN` roles, kept independent through the global
+guard chain that `AppModule` registers (`RateLimitGuard` → `SessionGuard` →
+`RolesGuard` → `OriginGuard`), in that order, because `RolesGuard` reads the
+principal `SessionGuard` attaches to the request.
+
+Nothing under `src/core/` or `src/shared/` imports from `src/features/`, so
+global infrastructure stays composable without any business feature. A feature
+that has to join the request pipeline implements the `HttpExtension` port
+(`src/core/http/http-extension.ts`) instead. `pnpm verify:boundaries` enforces
+that rule and runs as its own CI step.
 
 - [`docs/PRD.md`](./docs/PRD.md) — product requirements.
 - [`docs/PRODUCT_SPEC.md`](./docs/PRODUCT_SPEC.md) — the observable API
