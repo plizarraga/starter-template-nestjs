@@ -8,7 +8,7 @@
 
 [![CI](https://github.com/plizarraga/starter-template-nestjs/actions/workflows/pull-request.yml/badge.svg)](https://github.com/plizarraga/starter-template-nestjs/actions/workflows/pull-request.yml)
 [![Node](https://img.shields.io/badge/node-24%20LTS-339933?logo=node.js&logoColor=white)](https://nodejs.org)
-[![pnpm](https://img.shields.io/badge/pnpm-11.5.1-F69220?logo=pnpm&logoColor=white)](https://pnpm.io)
+[![pnpm](https://img.shields.io/badge/pnpm-11.25.0-F69220?logo=pnpm&logoColor=white)](https://pnpm.io)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 A production-oriented NestJS 12 starter with Better Auth email/password
@@ -37,7 +37,7 @@ persistence, and shared platform capabilities out of the box.
 ## Prerequisites
 
 - [Node.js 24 LTS](https://nodejs.org)
-- [pnpm 11.5.1](https://pnpm.io)
+- [pnpm 11.25.0](https://pnpm.io)
 - [Docker](https://www.docker.com) for local PostgreSQL and Testcontainers
   test suites
 
