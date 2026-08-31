@@ -7,7 +7,7 @@ import request from 'supertest';
 import { IsEmail } from 'class-validator';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../../src/app.module';
-import { Public } from '../../src/features/auth/decorators/public.decorator';
+import { Public } from '../../src/shared/decorators/public.decorator';
 import {
   Environment,
   validateEnvironment,

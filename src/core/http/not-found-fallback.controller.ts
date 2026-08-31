@@ -4,7 +4,7 @@ import {
   NotFoundException,
   VERSION_NEUTRAL,
 } from '@nestjs/common';
-import { Public } from '../../features/auth/decorators/public.decorator';
+import { Public } from '../../shared/decorators/public.decorator';
 
 @Controller({ version: VERSION_NEUTRAL })
 @Public()

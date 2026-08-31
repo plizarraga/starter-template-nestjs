@@ -11,7 +11,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
 import { afterEach, describe, expect, it } from 'vitest';
 import { AppModule } from '../../src/app.module';
-import { IS_PUBLIC_KEY } from '../../src/features/auth/decorators/public.decorator';
+import { IS_PUBLIC_KEY } from '../../src/shared/decorators/public.decorator';
 import { API_VERSIONED_PREFIX } from '../../src/core/http/api-version';
 import { configureApplication } from '../../src/core/http/configure-application';
 import { PrismaService } from '../../src/core/prisma/prisma.service';

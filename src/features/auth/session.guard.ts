@@ -4,7 +4,7 @@ import type { Request, Response } from 'express';
 import { Role } from '../../generated/prisma/client';
 import { PlatformError } from '../../core/errors/platform-error';
 import { BetterAuthService } from './better-auth.service';
-import { IS_PUBLIC_KEY } from './decorators/public.decorator';
+import { IS_PUBLIC_KEY } from '../../shared/decorators/public.decorator';
 
 export type AuthenticatedRequest = Request & {
   principal?: { id: string; role: Role };
