@@ -93,6 +93,9 @@ CREATE UNIQUE INDEX "session_token_key" ON "session"("token");
 CREATE INDEX "session_userId_idx" ON "session"("userId");
 
 -- CreateIndex
+CREATE INDEX "session_expiresAt_idx" ON "session"("expiresAt");
+
+-- CreateIndex
 CREATE INDEX "account_userId_idx" ON "account"("userId");
 
 -- CreateIndex
@@ -103,6 +106,9 @@ CREATE UNIQUE INDEX "rate_limit_key_key" ON "rate_limit"("key");
 
 -- CreateIndex
 CREATE INDEX "verification_identifier_idx" ON "verification"("identifier");
+
+-- CreateIndex
+CREATE INDEX "verification_expiresAt_idx" ON "verification"("expiresAt");
 
 -- AddForeignKey
 ALTER TABLE "session" ADD CONSTRAINT "session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;

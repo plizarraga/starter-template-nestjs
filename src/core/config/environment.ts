@@ -18,6 +18,7 @@ export type Environment = {
   RATE_LIMIT_REGISTER_MAX: number;
   RATE_LIMIT_REGISTER_TTL_SECONDS: number;
   RATE_LIMIT_TTL_SECONDS: number;
+  TRUST_PROXY_HOPS: number;
 };
 
 const environmentSchema = Joi.object<Environment>({
@@ -54,6 +55,12 @@ const environmentSchema = Joi.object<Environment>({
     .positive()
     .default(3600),
   RATE_LIMIT_TTL_SECONDS: Joi.number().integer().positive().default(60),
+  // Number of reverse proxies in front of this API. Express walks back this
+  // many hops through X-Forwarded-For to pick the client IP that rate limiting
+  // and logging attribute a request to, so an incorrect value either trusts a
+  // spoofed header or collapses every client onto the proxy's own address.
+  // `0` means the API is exposed directly.
+  TRUST_PROXY_HOPS: Joi.number().integer().min(0).default(1),
 }).unknown(true);
 
 function assertSecurePublicBaseUrl(env: Environment): void {

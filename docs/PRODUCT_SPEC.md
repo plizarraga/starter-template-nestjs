@@ -126,7 +126,8 @@ substring. List responses use:
 - Starter-owned routes are rate limited using `RATE_LIMIT_MAX` requests per
   `RATE_LIMIT_TTL_SECONDS` seconds. The `/api/v1/health/live` and
   `/api/v1/health/ready` probes are exempt. Better Auth retains its
-  independent native limits.
+  independent native limits. Both layers bucket by the client IP that Express
+  resolves according to `TRUST_PROXY_HOPS`.
 - Structured logs redact passwords, cookies, session values, configuration
   secrets, and database URLs.
 - `GET /api/v1/health/live` returns `{ "status": "ok" }` while the process
@@ -139,8 +140,9 @@ substring. List responses use:
 
 `NODE_ENV`, `DATABASE_URL`, `BETTER_AUTH_SECRET`, `CORS_ORIGINS`, and
 `PUBLIC_BASE_URL` are required. `PORT`, `DATABASE_SCHEMA`,
-`DEPLOYMENT_TOPOLOGY`, log level, starter route limits (`RATE_LIMIT_MAX` and
-`RATE_LIMIT_TTL_SECONDS`), and Better Auth route limits have defaults. The
+`DEPLOYMENT_TOPOLOGY`, `TRUST_PROXY_HOPS`, log level, starter route limits
+(`RATE_LIMIT_MAX` and `RATE_LIMIT_TTL_SECONDS`), and Better Auth route limits
+have defaults. The
 application drains in-flight requests and releases its PostgreSQL connection
 during a process shutdown. `pnpm seed:admin` reads `SEED_ADMIN_EMAIL` and
 `SEED_ADMIN_PASSWORD`, creates an account if absent, or promotes the matching

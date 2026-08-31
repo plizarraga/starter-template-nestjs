@@ -44,6 +44,7 @@ model Session {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([expiresAt])
   @@map("session")
 }
 
@@ -90,5 +91,6 @@ model Verification {
   updatedAt  DateTime @updatedAt @db.Timestamptz(6)
 
   @@index([identifier])
+  @@index([expiresAt])
   @@map("verification")
 }

@@ -102,6 +102,7 @@ the local values; production receives real values from the deployment platform.
 | `CORS_ORIGINS` | Required comma-separated trusted origins |
 | `DEPLOYMENT_TOPOLOGY` | `same-site` or `cross-site`; defaults to `same-site` |
 | `PUBLIC_BASE_URL` | Required absolute `http`/`https` URL; must be `https` under `cross-site` or `production` |
+| `TRUST_PROXY_HOPS` | Reverse proxy hop count for Express `trust proxy`; defaults to `1`, `0` for direct exposure |
 | `LOG_LEVEL` | Defaults to `debug` outside production and `info` in production |
 | `RATE_LIMIT_REGISTER_*` | Better Auth native sign-up limit override |
 | `RATE_LIMIT_LOGIN_*` | Better Auth native sign-in limit override |

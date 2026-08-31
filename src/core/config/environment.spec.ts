@@ -23,6 +23,30 @@ describe('validateEnvironment', () => {
     ).toThrow(/RATE_LIMIT_(MAX|TTL_SECONDS)/);
   });
 
+  it('When TRUST_PROXY_HOPS is omitted, then it defaults to a single proxy hop', () => {
+    const environment = { ...process.env };
+    delete environment.TRUST_PROXY_HOPS;
+
+    const result = validateEnvironment(environment);
+
+    expect(result.TRUST_PROXY_HOPS).toBe(1);
+  });
+
+  it('When TRUST_PROXY_HOPS is zero, then the API is accepted as directly exposed', () => {
+    const result = validateEnvironment({
+      ...process.env,
+      TRUST_PROXY_HOPS: '0',
+    });
+
+    expect(result.TRUST_PROXY_HOPS).toBe(0);
+  });
+
+  it('When TRUST_PROXY_HOPS is negative, then application initialization fails', () => {
+    expect(() =>
+      validateEnvironment({ ...process.env, TRUST_PROXY_HOPS: '-1' }),
+    ).toThrow('TRUST_PROXY_HOPS');
+  });
+
   it('When DEPLOYMENT_TOPOLOGY is omitted, then it defaults to same-site', () => {
     const environment = { ...process.env };
     delete environment.DEPLOYMENT_TOPOLOGY;

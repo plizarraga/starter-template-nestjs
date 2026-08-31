@@ -87,7 +87,9 @@ delegating to `OriginValidator` (`src/core/http/origin-validator.service.ts`);
 it is inert for safe methods and under `same-site`. `PUBLIC_BASE_URL` is required
 and must be `https` when `DEPLOYMENT_TOPOLOGY=cross-site` or
 `NODE_ENV=production`; an invalid combination fails boot rather than issuing a
-cookie the browser will reject. Starter-owned routes are rate limited via
+cookie the browser will reject. `TRUST_PROXY_HOPS` sets Express `trust proxy`
+and therefore the client IP that rate limiting and logging attribute a request
+to; it defaults to `1` and must match the real number of reverse proxies. Starter-owned routes are rate limited via
 `RateLimitGuard` (`RATE_LIMIT_MAX`/`RATE_LIMIT_TTL_SECONDS`); health routes are
 exempt. That guard keeps its counters in process memory, so the limit is
 per replica; the swap point for a shared store is the `storage` option of

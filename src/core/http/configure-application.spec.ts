@@ -87,6 +87,29 @@ describe('configureApplication', () => {
     setup.mockRestore();
   });
 
+  it('When a proxy hop count is configured, then Express trusts exactly that many hops', async () => {
+    const createDocument = vi
+      .spyOn(SwaggerModule, 'createDocument')
+      .mockReturnValue({ components: { schemas: {} }, paths: {} } as never);
+    vi.spyOn(SwaggerModule, 'setup').mockImplementation(() => {});
+    const config = {
+      getOrThrow: (key: string) =>
+        key === 'NODE_ENV'
+          ? 'development'
+          : key === 'CORS_ORIGINS'
+            ? 'http://localhost:3001'
+            : key === 'TRUST_PROXY_HOPS'
+              ? 3
+              : undefined,
+    };
+    const app = makeApp(config);
+
+    await configureApplication(app as never);
+
+    expect(app.set).toHaveBeenCalledWith('trust proxy', 3);
+    createDocument.mockRestore();
+  });
+
   it('When configuring the application, then it serves starter routes under the versioned API prefix', async () => {
     const createDocument = vi
       .spyOn(SwaggerModule, 'createDocument')
