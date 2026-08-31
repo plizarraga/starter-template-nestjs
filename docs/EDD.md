@@ -146,7 +146,10 @@ authentication route contract.
 
 Unit tests are colocated in `src/**/*.spec.ts` and use fakes. Integration tests
 are in `test/integration`, while E2E tests are in `test/e2e`; each E2E file
-creates an isolated PostgreSQL container and schema. The critical seams are:
+creates an isolated PostgreSQL container and schema, then applies the committed
+migrations to it. Tests therefore run against the schema the application
+actually ships, rather than one restated in test code that could drift from it
+and report a false pass. The critical seams are:
 
 | Seam | Evidence |
 | --- | --- |
