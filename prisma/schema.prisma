@@ -44,6 +44,7 @@ model Session {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([expiresAt])
   @@map("session")
 }
 
@@ -69,6 +70,18 @@ model Account {
   @@map("account")
 }
 
+// Better Auth writes its own rate-limit counters here when
+// `rateLimit.storage` is `database`, so the limits hold across API replicas
+// instead of resetting per process.
+model RateLimit {
+  id          String @id @default(uuid())
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+
+  @@map("rate_limit")
+}
+
 model Verification {
   id         String   @id @default(uuid())
   identifier String
@@ -78,5 +91,6 @@ model Verification {
   updatedAt  DateTime @updatedAt @db.Timestamptz(6)
 
   @@index([identifier])
+  @@index([expiresAt])
   @@map("verification")
 }

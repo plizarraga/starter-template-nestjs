@@ -28,7 +28,7 @@ export async function configureApplication(
     .split(',')
     .map((origin) => origin.trim());
 
-  app.set('trust proxy', 1);
+  app.set('trust proxy', config.getOrThrow<number>('TRUST_PROXY_HOPS'));
   app.use(requestIdMiddleware);
   app.use(helmet());
   const authService = app.get(BetterAuthService);

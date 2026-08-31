@@ -22,7 +22,7 @@ pnpm only. Do not use npm or yarn.
 | local PostgreSQL | `docker compose up -d` |
 | development | `pnpm start:dev` |
 | build | `pnpm build` |
-| typecheck | `npx tsc -p tsconfig.build.json --noEmit` |
+| typecheck | `pnpm typecheck` |
 | unit tests | `pnpm test` |
 | focused test | `pnpm test -- <pattern>` |
 | integration tests | `pnpm test:integration` |
@@ -87,9 +87,17 @@ delegating to `OriginValidator` (`src/core/http/origin-validator.service.ts`);
 it is inert for safe methods and under `same-site`. `PUBLIC_BASE_URL` is required
 and must be `https` when `DEPLOYMENT_TOPOLOGY=cross-site` or
 `NODE_ENV=production`; an invalid combination fails boot rather than issuing a
-cookie the browser will reject. Starter-owned routes are rate limited via
+cookie the browser will reject. `TRUST_PROXY_HOPS` sets Express `trust proxy`
+and therefore the client IP that rate limiting and logging attribute a request
+to; it defaults to `1` and must match the real number of reverse proxies. Starter-owned routes are rate limited via
 `RateLimitGuard` (`RATE_LIMIT_MAX`/`RATE_LIMIT_TTL_SECONDS`); health routes are
-exempt. Nest shutdown hooks are enabled so `SIGTERM` drains in-flight requests
+exempt. That guard keeps its counters in process memory, so the limit is
+per replica; the swap point for a shared store is the `storage` option of
+`ThrottlerModule.forRootAsync` in
+`src/core/access-control/access-control.module.ts`. Better Auth limits its own
+`/api/auth` routes and stores those counters in PostgreSQL (`rate_limit`), so
+credential limits do hold across replicas — but Better Auth enables rate
+limiting in production only. Nest shutdown hooks are enabled so `SIGTERM` drains in-flight requests
 before Prisma disconnects.
 
 `PlatformError` is converted by the global exception filter into the standard
@@ -102,8 +110,10 @@ new sensitive fields there.
 - Unit tests: `src/**/*.spec.ts`, using fakes only.
 - Integration tests: `test/integration/**/*.spec.ts`.
 - E2E tests: `test/e2e/**/*.spec.ts`.
-- `tsconfig.build.json` is the production typecheck target; the root tsconfig
-  includes known test-only noise.
+- `pnpm typecheck` type-checks `src/` and `test/` through the root tsconfig and
+  gates CI, so a type error in a spec file fails the pull request.
+  `tsconfig.build.json` narrows the same options to the production build and is
+  what `pnpm build` compiles.
 
 Test observable HTTP behavior at the Nest/PostgreSQL boundary. Keep unit tests
 for starter-owned business rules; do not mock or assert Better Auth internals.
@@ -115,6 +125,41 @@ combined checks such as `DEPLOYMENT_TOPOLOGY`/`PUBLIC_BASE_URL`/`NODE_ENV`.
 Copy `.env.example` to `.env` for local development. Production receives
 environment variables from the deployment platform. PostgreSQL is the only
 runtime service; production requires secure cookies and disables Swagger.
+
+## Database migrations
+
+`prisma/migrations/` holds exactly one migration, `init`, and it must stay that
+way. This is a template: every consumer starts from an empty database, so a
+trail of incremental migrations would only replay this repository's own history
+for someone who was never at any of those points.
+
+`prisma migrate dev` appends a new migration directory. After changing
+`prisma/schema.prisma`, fold that change back into `init` instead of shipping
+the extra directory:
+
+```bash
+pnpm exec prisma migrate diff --from-empty --to-schema prisma/schema.prisma \
+  --script --output prisma/migrations/<timestamp>_init/migration.sql
+rm -rf prisma/migrations/<the newly created directory>
+```
+
+Then verify the rewritten `init` still reproduces the schema, against a scratch
+database rather than your development one:
+
+```bash
+DATABASE_URL=<scratch> pnpm exec prisma migrate deploy
+DATABASE_URL=<scratch> pnpm exec prisma migrate diff \
+  --from-config-datasource --to-schema prisma/schema.prisma --exit-code
+```
+
+Exit code `0` means the migration and the schema agree. Rewriting `init`
+changes its checksum, so any database that already applied the previous one —
+including your local development database — needs `pnpm exec prisma migrate
+reset` before `prisma migrate dev` will run again.
+
+Keep the hand-written DDL in `test/e2e/auth.spec.ts` in step with the schema.
+That suite creates its tables directly instead of applying migrations, so a new
+model is invisible to it until it is added there by hand.
 
 ## Workflow
 
