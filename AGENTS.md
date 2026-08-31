@@ -134,3 +134,10 @@ Issues and specs live as GitHub issues, managed via the `gh` CLI. See
 
 Single-context layout: `CONTEXT.md` and `docs/adr/` at the repo root. See
 `docs/agents/domain.md`.
+
+### Date and time handling
+
+Before adding or touching any date/time field (Prisma schema, DTOs, API
+responses), read `docs/agents/date-time.md`. It covers instant vs.
+date-only vs. local-time semantics, `Timestamptz` vs. `Date`, and the
+`@IsInstantString()` convention for validating instant inputs.
