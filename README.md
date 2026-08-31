@@ -1,3 +1,9 @@
+<p align="center">
+  <a href="https://github.com/nestjs/nest" target="_blank">
+    <img src="https://nestjs.com/img/logo-small.svg" width="80" alt="NestJS logo" />
+  </a>
+</p>
+
 # Backend Starter (NestJS)
 
 [![CI](https://github.com/plizarraga/starter-template-nestjs/actions/workflows/pull-request.yml/badge.svg)](https://github.com/plizarraga/starter-template-nestjs/actions/workflows/pull-request.yml)
@@ -5,7 +11,7 @@
 [![pnpm](https://img.shields.io/badge/pnpm-11.5.1-F69220?logo=pnpm&logoColor=white)](https://pnpm.io)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
-A production-oriented NestJS 11 starter with Better Auth email/password
+A production-oriented NestJS 12 starter with Better Auth email/password
 identity, HTTP-only browser sessions, application RBAC, PostgreSQL
 persistence, and shared platform capabilities out of the box.
 
