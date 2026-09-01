@@ -9,6 +9,10 @@ import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { API_VERSIONED_PREFIX } from '../../src/core/http/api-version';
 import { configureApplication } from '../../src/core/http/configure-application';
+import {
+  BetterAuthService,
+  findUnaccountedAuthPaths,
+} from '../../src/features/auth/better-auth.service';
 import { defaultEnvironment } from '../support/default-environment';
 import {
   createTestEnvironment,
@@ -441,5 +445,129 @@ describe('Better Auth authentication (e2e)', () => {
         DATABASE_URL: environment.databaseUrl,
       };
     }
+  });
+
+  it('When Better Auth generates its live OpenAPI schema, then every path is either published or deliberately excluded', async () => {
+    const schema = await app.get(BetterAuthService).generateOpenApiSchema();
+    const unaccounted = findUnaccountedAuthPaths(Object.keys(schema.paths));
+
+    expect(
+      unaccounted,
+      `Better Auth generates path(s) neither PUBLISHED_AUTH_PATHS nor EXCLUDED_AUTH_PATHS accounts for: ${unaccounted.join(', ')}. Classify each in src/features/auth/better-auth.service.ts.`,
+    ).toEqual([]);
+  });
+
+  it('When a signed-in user lists their sessions, then the current session is returned', async () => {
+    const email = 'session-lister@example.com';
+    await request(app.getHttpServer())
+      .post('/api/auth/sign-up/email')
+      .send({ name: 'Session lister', email, password: 'password-123' })
+      .expect(200);
+    const login = await request(app.getHttpServer())
+      .post('/api/auth/sign-in/email')
+      .send({ email, password: 'password-123' })
+      .expect(200);
+    const cookie = login.headers['set-cookie']?.[0] ?? '';
+
+    const response = await request(app.getHttpServer())
+      .get('/api/auth/list-sessions')
+      .set('Cookie', cookie)
+      .expect(200);
+
+    expect(response.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ userId: expect.any(String) }),
+      ]),
+    );
+  });
+
+  it('When a signed-in user revokes their other sessions, then the calling session stays signed in', async () => {
+    const email = 'revoke-other-sessions@example.com';
+    await request(app.getHttpServer())
+      .post('/api/auth/sign-up/email')
+      .send({ name: 'Revoker', email, password: 'password-123' })
+      .expect(200);
+    const login = await request(app.getHttpServer())
+      .post('/api/auth/sign-in/email')
+      .send({ email, password: 'password-123' })
+      .expect(200);
+    const cookie = login.headers['set-cookie']?.[0] ?? '';
+
+    await request(app.getHttpServer())
+      .post('/api/auth/revoke-other-sessions')
+      .set('Cookie', cookie)
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .get('/api/auth/get-session')
+      .set('Cookie', cookie)
+      .expect(200)
+      .expect(({ body }) =>
+        expect(body).toMatchObject({ user: { email } }),
+      );
+  });
+
+  it('When a signed-in user revokes one of their sessions, then the endpoint is reachable and succeeds', async () => {
+    const email = 'revoke-one-session@example.com';
+    await request(app.getHttpServer())
+      .post('/api/auth/sign-up/email')
+      .send({ name: 'One revoker', email, password: 'password-123' })
+      .expect(200);
+    const login = await request(app.getHttpServer())
+      .post('/api/auth/sign-in/email')
+      .send({ email, password: 'password-123' })
+      .expect(200);
+    const cookie = login.headers['set-cookie']?.[0] ?? '';
+    const sessions = await request(app.getHttpServer())
+      .get('/api/auth/list-sessions')
+      .set('Cookie', cookie)
+      .expect(200);
+    const [session] = sessions.body as { token: string }[];
+    if (!session) {
+      throw new Error('Expected at least one session to be listed');
+    }
+
+    await request(app.getHttpServer())
+      .post('/api/auth/revoke-session')
+      .set('Cookie', cookie)
+      .send({ token: session.token })
+      .expect(200);
+  });
+
+  it('When a signed-in user revokes all of their sessions, then the endpoint is reachable and succeeds', async () => {
+    const email = 'revoke-all-sessions@example.com';
+    await request(app.getHttpServer())
+      .post('/api/auth/sign-up/email')
+      .send({ name: 'All revoker', email, password: 'password-123' })
+      .expect(200);
+    const login = await request(app.getHttpServer())
+      .post('/api/auth/sign-in/email')
+      .send({ email, password: 'password-123' })
+      .expect(200);
+    const cookie = login.headers['set-cookie']?.[0] ?? '';
+
+    await request(app.getHttpServer())
+      .post('/api/auth/revoke-sessions')
+      .set('Cookie', cookie)
+      .expect(200);
+  });
+
+  it('When a signed-in user calls the excluded account-deletion route, then it fails as an undocumented capability', async () => {
+    const email = 'delete-user-excluded@example.com';
+    await request(app.getHttpServer())
+      .post('/api/auth/sign-up/email')
+      .send({ name: 'Never deleted', email, password: 'password-123' })
+      .expect(200);
+    const login = await request(app.getHttpServer())
+      .post('/api/auth/sign-in/email')
+      .send({ email, password: 'password-123' })
+      .expect(200);
+    const cookie = login.headers['set-cookie']?.[0] ?? '';
+
+    await request(app.getHttpServer())
+      .post('/api/auth/delete-user')
+      .set('Cookie', cookie)
+      .send({})
+      .expect(404);
   });
 });
