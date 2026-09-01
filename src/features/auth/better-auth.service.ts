@@ -15,12 +15,153 @@ import { PrismaService } from '../../core/prisma/prisma.service';
 export const AUTH_BASE_PATH = `/${API_GLOBAL_PREFIX}/auth`;
 
 /** Better Auth routes this starter documents in its OpenAPI schema. */
-const DOCUMENTED_AUTH_PATHS = new Set([
+const PUBLISHED_AUTH_PATHS = new Set([
   '/sign-up/email',
   '/sign-in/email',
   '/sign-out',
   '/get-session',
+  '/list-sessions',
+  '/revoke-session',
+  '/revoke-sessions',
+  '/revoke-other-sessions',
 ]);
+
+/**
+ * Better Auth routes this starter deliberately withholds from the published
+ * document, with the configuration that would turn each into a real
+ * capability. This registry plus {@link PUBLISHED_AUTH_PATHS} must account
+ * for every path Better Auth's `openAPI()` plugin generates — enforced by
+ * {@link findUnaccountedAuthPaths} — so upgrading Better Auth and picking up
+ * a new route fails loudly instead of silently drifting from the document.
+ */
+const EXCLUDED_AUTH_PATHS: ReadonlyArray<{ path: string; reason: string }> = [
+  {
+    path: '/account-info',
+    reason:
+      "Reads a linked OAuth provider's account info; returns nothing useful until `socialProviders` configures a provider.",
+  },
+  {
+    path: '/callback/{id}',
+    reason:
+      'OAuth callback for a given provider id; unreachable until `socialProviders` configures that provider.',
+  },
+  {
+    path: '/change-email',
+    reason:
+      'Guarded by `user.changeEmail.enabled` — Better Auth throws BAD_REQUEST while it is unset, which this starter leaves unset.',
+  },
+  {
+    path: '/change-password',
+    reason:
+      'Core route, already functional with no gating config; withheld because self-service profile management is outside this ticket’s session-management scope.',
+  },
+  {
+    path: '/delete-user',
+    reason:
+      'Guarded by `user.deleteUser.enabled` — Better Auth throws NOT_FOUND while it is unset, which this starter leaves unset.',
+  },
+  {
+    path: '/delete-user/callback',
+    reason:
+      'Completes the `/delete-user` verification flow; inert for the same reason — `user.deleteUser.enabled` is unset.',
+  },
+  {
+    path: '/error',
+    reason:
+      "Better Auth's own HTML error page for OAuth redirects; not gated by configuration and irrelevant to a JSON API.",
+  },
+  {
+    path: '/get-access-token',
+    reason:
+      "Refreshes a linked provider's OAuth token; requires `socialProviders` to configure that provider.",
+  },
+  {
+    path: '/link-social',
+    reason:
+      'Links a social account to the signed-in user; requires `socialProviders` to configure a provider.',
+  },
+  {
+    path: '/list-accounts',
+    reason:
+      "Lists the user's linked OAuth accounts; always empty until `socialProviders` configures a provider.",
+  },
+  {
+    path: '/ok',
+    reason:
+      "Better Auth's own liveness probe; the starter documents its own health routes instead.",
+  },
+  {
+    path: '/refresh-token',
+    reason:
+      'Refreshes an OAuth provider access token; requires `socialProviders` to configure that provider.',
+  },
+  {
+    path: '/request-password-reset',
+    reason:
+      'Guarded by `emailAndPassword.sendResetPassword` — Better Auth throws BAD_REQUEST while it is unset, which this starter leaves unset.',
+  },
+  {
+    path: '/reset-password',
+    reason:
+      'Consumes the token `/request-password-reset` issues; inert for the same reason — `emailAndPassword.sendResetPassword` is unset.',
+  },
+  {
+    path: '/reset-password/{token}',
+    reason:
+      'The redirect landing for the reset-password email link; inert for the same reason — `emailAndPassword.sendResetPassword` is unset.',
+  },
+  {
+    path: '/send-verification-email',
+    reason:
+      'Guarded by `emailVerification.sendVerificationEmail` — Better Auth throws BAD_REQUEST while it is unset, which this starter leaves unset.',
+  },
+  {
+    path: '/sign-in/social',
+    reason:
+      'Starts an OAuth sign-in; requires `socialProviders` to configure a provider.',
+  },
+  {
+    path: '/unlink-account',
+    reason:
+      'Unlinks a social account; requires `socialProviders` to configure a provider before any account can be linked.',
+  },
+  {
+    path: '/update-session',
+    reason:
+      'Core route, already functional with no gating config; withheld because updating session metadata is outside this ticket’s session-management scope, which covers listing and revoking.',
+  },
+  {
+    path: '/update-user',
+    reason:
+      'Core route, already functional with no gating config; withheld because self-service profile management is outside this ticket’s session-management scope.',
+  },
+  {
+    path: '/verify-email',
+    reason:
+      'Consumes the token `/send-verification-email` mints; that route throws BAD_REQUEST while `emailVerification.sendVerificationEmail` is unset, so no valid token is ever issued.',
+  },
+  {
+    path: '/verify-password',
+    reason:
+      'Core route, already functional with no gating config; withheld because self-service credential checks are outside this ticket’s session-management scope.',
+  },
+];
+
+const EXCLUDED_AUTH_PATH_SET = new Set(
+  EXCLUDED_AUTH_PATHS.map((route) => route.path),
+);
+
+/**
+ * Returns every path in `paths` that neither registry accounts for. Empty
+ * means {@link PUBLISHED_AUTH_PATHS} and {@link EXCLUDED_AUTH_PATHS}
+ * completely describe what Better Auth currently generates.
+ */
+export function findUnaccountedAuthPaths(paths: Iterable<string>): string[] {
+  return [...paths].filter(
+    (path) =>
+      !PUBLISHED_AUTH_PATHS.has(path) && !EXCLUDED_AUTH_PATH_SET.has(path),
+  );
+}
 
 /** Documented routes that issue a session rather than requiring one. */
 const SESSION_ISSUING_AUTH_PATHS = new Set([
@@ -78,7 +219,7 @@ export function mergeAuthOpenApiDocument(
   basePath: string,
 ): void {
   for (const [path, item] of Object.entries(schema.paths ?? {})) {
-    if (!DOCUMENTED_AUTH_PATHS.has(path)) {
+    if (!PUBLISHED_AUTH_PATHS.has(path)) {
       continue;
     }
     document.paths[`${basePath}${path}`] = normalizeAuthPathItem(path, item);

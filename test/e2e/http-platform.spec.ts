@@ -419,6 +419,10 @@ describe('HTTP platform (e2e)', () => {
         '/api/auth/sign-in/email',
         '/api/auth/sign-out',
         '/api/auth/get-session',
+        '/api/auth/list-sessions',
+        '/api/auth/revoke-session',
+        '/api/auth/revoke-sessions',
+        '/api/auth/revoke-other-sessions',
       ]),
     );
     expect(paths.some((path) => /^\/users(\/|$)/.test(path))).toBe(false);
@@ -474,6 +478,18 @@ describe('HTTP platform (e2e)', () => {
     });
     expect(document.paths['/api/auth/get-session']).toMatchObject({
       get: { security: [{ cookie: [] }], tags: ['auth'] },
+    });
+    expect(document.paths['/api/auth/list-sessions']).toMatchObject({
+      get: { security: [{ cookie: [] }], tags: ['auth'] },
+    });
+    expect(document.paths['/api/auth/revoke-session']).toMatchObject({
+      post: { security: [{ cookie: [] }], tags: ['auth'] },
+    });
+    expect(document.paths['/api/auth/revoke-sessions']).toMatchObject({
+      post: { security: [{ cookie: [] }], tags: ['auth'] },
+    });
+    expect(document.paths['/api/auth/revoke-other-sessions']).toMatchObject({
+      post: { security: [{ cookie: [] }], tags: ['auth'] },
     });
     expect(document.components?.securitySchemes).not.toHaveProperty(
       'bearerAuth',

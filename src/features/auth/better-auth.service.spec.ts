@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   AUTH_BASE_PATH,
   deriveCookieAttributes,
+  findUnaccountedAuthPaths,
   mergeAuthOpenApiDocument,
 } from './better-auth.service';
 
@@ -28,6 +29,29 @@ function createAuthSchema() {
       '/sign-in/email': { post: operation() },
       '/sign-out': { post: operation() },
       '/get-session': { get: operation(), post: operation() },
+      '/list-sessions': { get: operation() },
+      '/revoke-session': {
+        post: {
+          ...operation(),
+          requestBody: {
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/RevokeSessionBody' },
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: 'Session revoked',
+              content: {
+                'application/json': { schema: { type: 'object' } },
+              },
+            },
+          },
+        },
+      },
+      '/revoke-sessions': { post: operation() },
+      '/revoke-other-sessions': { post: operation() },
       '/ok': { get: operation() },
     },
   };
@@ -190,6 +214,67 @@ describe('mergeAuthOpenApiDocument', () => {
       `${AUTH_BASE_PATH}/sign-in/email`,
       `${AUTH_BASE_PATH}/sign-out`,
       `${AUTH_BASE_PATH}/get-session`,
+      `${AUTH_BASE_PATH}/list-sessions`,
+      `${AUTH_BASE_PATH}/revoke-session`,
+      `${AUTH_BASE_PATH}/revoke-sessions`,
+      `${AUTH_BASE_PATH}/revoke-other-sessions`,
     ]);
+  });
+
+  it('When the session-management routes need a session, then they are published against the cookie scheme', () => {
+    const document = createStarterDocument();
+
+    mergeAuthOpenApiDocument(document, createAuthSchema(), AUTH_BASE_PATH);
+
+    expect(document.paths[`${AUTH_BASE_PATH}/list-sessions`]).toMatchObject({
+      get: { security: [{ cookie: [] }], tags: ['auth'] },
+    });
+    expect(document.paths[`${AUTH_BASE_PATH}/revoke-session`]).toMatchObject({
+      post: { security: [{ cookie: [] }], tags: ['auth'] },
+    });
+    expect(document.paths[`${AUTH_BASE_PATH}/revoke-sessions`]).toMatchObject({
+      post: { security: [{ cookie: [] }], tags: ['auth'] },
+    });
+    expect(
+      document.paths[`${AUTH_BASE_PATH}/revoke-other-sessions`],
+    ).toMatchObject({
+      post: { security: [{ cookie: [] }], tags: ['auth'] },
+    });
+  });
+
+  it('When a published route carries a request body and response schema, then both survive the merge', () => {
+    const document = createStarterDocument();
+
+    mergeAuthOpenApiDocument(document, createAuthSchema(), AUTH_BASE_PATH);
+
+    const published = document.paths[`${AUTH_BASE_PATH}/revoke-session`] as {
+      post: { requestBody: unknown; responses: unknown };
+    };
+    expect(published.post.requestBody).toMatchObject({
+      content: {
+        'application/json': {
+          schema: { $ref: '#/components/schemas/RevokeSessionBody' },
+        },
+      },
+    });
+    expect(published.post.responses).toMatchObject({
+      200: { description: 'Session revoked' },
+    });
+  });
+});
+
+describe('findUnaccountedAuthPaths', () => {
+  it('When every generated path is either published or excluded, then nothing is unaccounted', () => {
+    const schema = createAuthSchema();
+
+    expect(
+      findUnaccountedAuthPaths([...Object.keys(schema.paths), '/delete-user']),
+    ).toEqual([]);
+  });
+
+  it('When Better Auth generates a path neither registry names, then it is reported', () => {
+    expect(
+      findUnaccountedAuthPaths(['/get-session', '/a-brand-new-route']),
+    ).toEqual(['/a-brand-new-route']);
   });
 });
