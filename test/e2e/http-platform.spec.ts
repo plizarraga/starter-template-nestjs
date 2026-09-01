@@ -425,6 +425,64 @@ describe('HTTP platform (e2e)', () => {
     expect(paths.some((path) => /^\/health(\/|$)/.test(path))).toBe(false);
   });
 
+  it('When the application is not in production, then every published operation names a declared security scheme', async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+    app = moduleFixture.createNestApplication();
+    await configureApplication(app);
+    await app.init();
+
+    const response = await request(app.getHttpServer())
+      .get('/docs-json')
+      .expect(200);
+    const document = response.body as OpenAPIObject;
+    const declared = Object.keys(document.components?.securitySchemes ?? {});
+    const referenced = Object.values(document.paths)
+      .flatMap((item) => Object.values(item))
+      .flatMap((operation: { security?: Record<string, unknown>[] }) =>
+        Array.isArray(operation?.security) ? operation.security : [],
+      )
+      .flatMap((requirement) => Object.keys(requirement));
+
+    expect(declared).toContain('cookie');
+    expect(referenced).not.toHaveLength(0);
+    expect([...new Set(referenced)].sort()).toEqual(declared.sort());
+  });
+
+  it('When the application is not in production, then OpenAPI scopes authentication routes to the session cookie', async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+    app = moduleFixture.createNestApplication();
+    await configureApplication(app);
+    await app.init();
+
+    const response = await request(app.getHttpServer())
+      .get('/docs-json')
+      .expect(200);
+    const document = response.body as OpenAPIObject;
+
+    expect(document.paths['/api/auth/sign-up/email']).toMatchObject({
+      post: { security: [], tags: ['auth'] },
+    });
+    expect(document.paths['/api/auth/sign-in/email']).toMatchObject({
+      post: { security: [], tags: ['auth'] },
+    });
+    expect(document.paths['/api/auth/sign-out']).toMatchObject({
+      post: { security: [{ cookie: [] }], tags: ['auth'] },
+    });
+    expect(document.paths['/api/auth/get-session']).toMatchObject({
+      get: { security: [{ cookie: [] }], tags: ['auth'] },
+    });
+    expect(document.components?.securitySchemes).not.toHaveProperty(
+      'bearerAuth',
+    );
+    expect(document.components?.securitySchemes).not.toHaveProperty(
+      'apiKeyCookie',
+    );
+  });
+
   it('When a required configuration value is absent, then application initialization fails', () => {
     const environment = { ...process.env };
     delete environment.BETTER_AUTH_SECRET;

@@ -70,6 +70,7 @@ describe('configureApplication', () => {
       'docs',
       expect.anything(),
       expect.anything(),
+      { swaggerOptions: { persistAuthorization: true, withCredentials: true } },
     );
     expect(createDocument.mock.calls[0]?.[1]).toMatchObject({
       components: {
@@ -82,6 +83,33 @@ describe('configureApplication', () => {
         },
       },
     });
+    createDocument.mockRestore();
+    setup.mockRestore();
+  });
+
+  it('When not in production, then the description explains that the Authorize dialog cannot set the session cookie', async () => {
+    const createDocument = vi
+      .spyOn(SwaggerModule, 'createDocument')
+      .mockReturnValue({ components: { schemas: {} }, paths: {} } as never);
+    const setup = vi.spyOn(SwaggerModule, 'setup').mockImplementation(() => {});
+    const config = {
+      getOrThrow: (key: string) =>
+        key === 'NODE_ENV'
+          ? 'development'
+          : key === 'CORS_ORIGINS'
+            ? 'http://localhost:3001'
+            : undefined,
+    };
+
+    await configureApplication(makeApp(config) as never);
+
+    const built = createDocument.mock.calls[0]?.[1] as
+      { info: { description: string } } | undefined;
+    const description = built?.info.description ?? '';
+    expect(description).toContain('User administration API');
+    expect(description).toContain('Authorize dialog cannot set');
+    expect(description).toContain('Cookie header');
+    expect(description).toContain('/api/auth/sign-in/email');
     createDocument.mockRestore();
     setup.mockRestore();
   });

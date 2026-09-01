@@ -22,6 +22,74 @@ const DOCUMENTED_AUTH_PATHS = new Set([
   '/get-session',
 ]);
 
+/** Documented routes that issue a session rather than requiring one. */
+const SESSION_ISSUING_AUTH_PATHS = new Set([
+  '/sign-up/email',
+  '/sign-in/email',
+]);
+
+/** The only path item keys that hold an OpenAPI operation object. */
+const OPERATION_KEYS = new Set([
+  'get',
+  'post',
+  'put',
+  'patch',
+  'delete',
+  'options',
+  'head',
+  'trace',
+]);
+
+type AuthOpenApiSchema = {
+  components?: {
+    schemas?: NonNullable<OpenAPIObject['components']>['schemas'];
+  };
+  paths?: Record<string, object>;
+};
+
+function normalizeAuthPathItem(
+  path: string,
+  item: object,
+): OpenAPIObject['paths'][string] {
+  const security = SESSION_ISSUING_AUTH_PATHS.has(path) ? [] : [{ cookie: [] }];
+  const normalized: Record<string, unknown> = { ...item };
+  for (const [key, operation] of Object.entries(item)) {
+    if (!OPERATION_KEYS.has(key)) {
+      continue;
+    }
+    normalized[key] = {
+      ...(operation as Record<string, unknown>),
+      security,
+      tags: ['auth'],
+    };
+  }
+  return normalized as OpenAPIObject['paths'][string];
+}
+
+/**
+ * Publishes the documented Better Auth routes under `basePath`, restated
+ * against the session cookie scheme the starter's own document declares.
+ * Better Auth documents a bearer flow this starter does not implement, so only
+ * its schemas cross over — never its security schemes or requirements.
+ */
+export function mergeAuthOpenApiDocument(
+  document: OpenAPIObject,
+  schema: AuthOpenApiSchema,
+  basePath: string,
+): void {
+  for (const [path, item] of Object.entries(schema.paths ?? {})) {
+    if (!DOCUMENTED_AUTH_PATHS.has(path)) {
+      continue;
+    }
+    document.paths[`${basePath}${path}`] = normalizeAuthPathItem(path, item);
+  }
+  document.components ??= {};
+  document.components.schemas = {
+    ...document.components.schemas,
+    ...schema.components?.schemas,
+  };
+}
+
 type CookieAttributes = {
   httpOnly: true;
   partitioned?: true;
@@ -124,22 +192,7 @@ export class BetterAuthService implements HttpExtension {
 
   async contributeOpenApiDocument(document: OpenAPIObject): Promise<void> {
     const schema = await this.generateOpenApiSchema();
-    for (const [path, item] of Object.entries(schema.paths ?? {})) {
-      if (!DOCUMENTED_AUTH_PATHS.has(path)) {
-        continue;
-      }
-      for (const operation of Object.values(
-        item as Record<string, { tags?: string[] }>,
-      )) {
-        operation.tags = ['auth'];
-      }
-      document.paths[`${this.basePath}${path}`] =
-        item as OpenAPIObject['paths'][string];
-    }
-    Object.assign(
-      document.components?.schemas ?? {},
-      schema.components?.schemas,
-    );
+    mergeAuthOpenApiDocument(document, schema, this.basePath);
   }
 
   async getSession(request: Request, response: Response) {
