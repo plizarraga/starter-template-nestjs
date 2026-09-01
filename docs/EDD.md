@@ -86,7 +86,10 @@ requests, where `SameSite=Lax` remains the browser-level protection. Better
 Auth owns the corresponding check for its native routes. Session cookie caching
 (`session.cookieCache`) stays disabled: enabling it would trade the guarantee
 that a role change takes effect on the next protected request for a staleness
-window. `PUBLIC_BASE_URL` feeds Better Auth's `baseURL` and must be `https` when
+window. Why the session is carried by a cookie at all rather than a bearer
+token, what that costs, and what a native client would require instead is
+recorded in [ADR 0002](./adr/0002-cookie-session-for-spa.md).
+`PUBLIC_BASE_URL` feeds Better Auth's `baseURL` and must be `https` when
 `DEPLOYMENT_TOPOLOGY=cross-site` or `NODE_ENV=production`; a configuration
 browsers would reject fails at boot with a message naming the offending
 combination, rather than as a silent `401` in production.
