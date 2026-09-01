@@ -57,3 +57,40 @@ jobs:
         with:
           context: .
           push: false
+          load: true
+          tags: starter-template-nestjs:ci
+
+      - name: Start PostgreSQL for the image
+        run: docker compose --project-name image-check up --detach --wait postgres
+
+      - name: Start the built image
+        run: |
+          docker run --detach \
+            --name image-check-app \
+            --network image-check_default \
+            --publish 3000:3000 \
+            --env DATABASE_URL=postgresql://backend_starter:backend_starter@postgres:5432/backend_starter \
+            --env BETTER_AUTH_SECRET=ci-only-better-auth-secret-not-used-anywhere-else \
+            --env CORS_ORIGINS=http://localhost:3000 \
+            --env PUBLIC_BASE_URL=https://localhost \
+            --env PORT=3000 \
+            starter-template-nestjs:ci
+
+      - name: Verify the built image serves readiness
+        id: readiness
+        run: |
+          curl --fail --silent --show-error \
+            --max-time 10 \
+            --retry 30 --retry-delay 2 --retry-max-time 90 \
+            --retry-all-errors --retry-connrefused \
+            http://localhost:3000/api/v1/health/ready
+
+      - name: Report why the built image never became ready
+        if: failure() && steps.readiness.outcome == 'failure'
+        run: docker logs image-check-app
+
+      - name: Stop the image and its database
+        if: always()
+        run: |
+          docker rm --force image-check-app
+          docker compose --project-name image-check down --volumes
