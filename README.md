@@ -23,7 +23,8 @@ persistence, and shared platform capabilities out of the box.
 ## Features
 
 - Native Better Auth routes at `/api/auth` for email/password sign-up,
-  sign-in, sign-out, and session lookup.
+  sign-in, sign-out, password changes and verification, profile updates,
+  identity-provider account listing, and session management.
 - Starter-owned routes served under a versioned `/api/v1` prefix.
 - Seven-day rolling browser sessions renewed at most once per day.
 - `USER` and `ADMIN` authorization for starter-owned user APIs.

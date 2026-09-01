@@ -29,7 +29,9 @@ function createAuthSchema() {
       '/sign-in/email': { post: operation() },
       '/sign-out': { post: operation() },
       '/get-session': { get: operation(), post: operation() },
+      '/change-password': { post: operation() },
       '/list-sessions': { get: operation() },
+      '/list-accounts': { get: operation() },
       '/revoke-session': {
         post: {
           ...operation(),
@@ -52,6 +54,8 @@ function createAuthSchema() {
       },
       '/revoke-sessions': { post: operation() },
       '/revoke-other-sessions': { post: operation() },
+      '/update-user': { post: operation() },
+      '/verify-password': { post: operation() },
       '/ok': { get: operation() },
     },
   };
@@ -214,10 +218,14 @@ describe('mergeAuthOpenApiDocument', () => {
       `${AUTH_BASE_PATH}/sign-in/email`,
       `${AUTH_BASE_PATH}/sign-out`,
       `${AUTH_BASE_PATH}/get-session`,
+      `${AUTH_BASE_PATH}/change-password`,
       `${AUTH_BASE_PATH}/list-sessions`,
+      `${AUTH_BASE_PATH}/list-accounts`,
       `${AUTH_BASE_PATH}/revoke-session`,
       `${AUTH_BASE_PATH}/revoke-sessions`,
       `${AUTH_BASE_PATH}/revoke-other-sessions`,
+      `${AUTH_BASE_PATH}/update-user`,
+      `${AUTH_BASE_PATH}/verify-password`,
     ]);
   });
 
@@ -239,6 +247,30 @@ describe('mergeAuthOpenApiDocument', () => {
       document.paths[`${AUTH_BASE_PATH}/revoke-other-sessions`],
     ).toMatchObject({
       post: { security: [{ cookie: [] }], tags: ['auth'] },
+    });
+  });
+
+  it('When credential and profile routes need a session, then they are published against the cookie scheme', () => {
+    const document = createStarterDocument();
+
+    mergeAuthOpenApiDocument(document, createAuthSchema(), AUTH_BASE_PATH);
+
+    expect(document.paths[`${AUTH_BASE_PATH}/change-password`]).toMatchObject({
+      post: { security: [{ cookie: [] }], tags: ['auth'] },
+    });
+    expect(document.paths[`${AUTH_BASE_PATH}/verify-password`]).toMatchObject({
+      post: { security: [{ cookie: [] }], tags: ['auth'] },
+    });
+    expect(document.paths[`${AUTH_BASE_PATH}/update-user`]).toMatchObject({
+      post: {
+        description:
+          'The starter owns user roles; this route cannot set or change a role.',
+        security: [{ cookie: [] }],
+        tags: ['auth'],
+      },
+    });
+    expect(document.paths[`${AUTH_BASE_PATH}/list-accounts`]).toMatchObject({
+      get: { security: [{ cookie: [] }], tags: ['auth'] },
     });
   });
 
