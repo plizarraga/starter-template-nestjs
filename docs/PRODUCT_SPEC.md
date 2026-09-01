@@ -18,10 +18,20 @@ Better Auth owns the native authentication API mounted at `/api/auth`.
 | `POST` | `/api/auth/sign-in/email` | Create a browser session. |
 | `POST` | `/api/auth/sign-out` | End the current session. |
 | `GET` | `/api/auth/get-session` | Return the active session when present. |
+| `GET` | `/api/auth/list-sessions` | List the caller's active sessions. |
+| `POST` | `/api/auth/revoke-session` | Revoke one session by its token. |
+| `POST` | `/api/auth/revoke-sessions` | Revoke every session, including the caller's own. |
+| `POST` | `/api/auth/revoke-other-sessions` | Revoke every session except the caller's own. |
 
 Authentication routes use Better Auth request, success, cookie, and error
 shapes. The starter does not adapt those responses. Sign-up requires `name`,
 `email`, and `password`; sign-in requires `email` and `password`.
+
+Better Auth generates other routes this starter does not enable and therefore
+does not publish — social sign-in, email change, account deletion, password
+reset, and email verification each require configuration the starter leaves
+unset. `src/features/auth/better-auth.service.ts` names each one and the
+configuration that would enable it.
 
 ### Starter-Owned Routes
 

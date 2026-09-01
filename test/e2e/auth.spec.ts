@@ -21,6 +21,22 @@ import {
 
 const execFile = promisify(executeFile);
 
+/** Signs up and signs in a fresh user, returning its session cookie. */
+async function signUpAndSignIn(
+  app: NestExpressApplication,
+  email: string,
+): Promise<string> {
+  await request(app.getHttpServer())
+    .post('/api/auth/sign-up/email')
+    .send({ name: 'Test user', email, password: 'password-123' })
+    .expect(200);
+  const login = await request(app.getHttpServer())
+    .post('/api/auth/sign-in/email')
+    .send({ email, password: 'password-123' })
+    .expect(200);
+  return login.headers['set-cookie']?.[0] ?? '';
+}
+
 describe('Better Auth authentication (e2e)', () => {
   let app: NestExpressApplication;
   let environment: TestEnvironment;
@@ -458,16 +474,13 @@ describe('Better Auth authentication (e2e)', () => {
   });
 
   it('When a signed-in user lists their sessions, then the current session is returned', async () => {
-    const email = 'session-lister@example.com';
-    await request(app.getHttpServer())
-      .post('/api/auth/sign-up/email')
-      .send({ name: 'Session lister', email, password: 'password-123' })
+    const cookie = await signUpAndSignIn(app, 'session-lister@example.com');
+    const currentSession = await request(app.getHttpServer())
+      .get('/api/auth/get-session')
+      .set('Cookie', cookie)
       .expect(200);
-    const login = await request(app.getHttpServer())
-      .post('/api/auth/sign-in/email')
-      .send({ email, password: 'password-123' })
-      .expect(200);
-    const cookie = login.headers['set-cookie']?.[0] ?? '';
+    const currentToken = (currentSession.body as { session: { token: string } })
+      .session.token;
 
     const response = await request(app.getHttpServer())
       .get('/api/auth/list-sessions')
@@ -476,22 +489,14 @@ describe('Better Auth authentication (e2e)', () => {
 
     expect(response.body).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ userId: expect.any(String) }),
+        expect.objectContaining({ token: currentToken }),
       ]),
     );
   });
 
   it('When a signed-in user revokes their other sessions, then the calling session stays signed in', async () => {
     const email = 'revoke-other-sessions@example.com';
-    await request(app.getHttpServer())
-      .post('/api/auth/sign-up/email')
-      .send({ name: 'Revoker', email, password: 'password-123' })
-      .expect(200);
-    const login = await request(app.getHttpServer())
-      .post('/api/auth/sign-in/email')
-      .send({ email, password: 'password-123' })
-      .expect(200);
-    const cookie = login.headers['set-cookie']?.[0] ?? '';
+    const cookie = await signUpAndSignIn(app, email);
 
     await request(app.getHttpServer())
       .post('/api/auth/revoke-other-sessions')
@@ -502,22 +507,11 @@ describe('Better Auth authentication (e2e)', () => {
       .get('/api/auth/get-session')
       .set('Cookie', cookie)
       .expect(200)
-      .expect(({ body }) =>
-        expect(body).toMatchObject({ user: { email } }),
-      );
+      .expect(({ body }) => expect(body).toMatchObject({ user: { email } }));
   });
 
   it('When a signed-in user revokes one of their sessions, then the endpoint is reachable and succeeds', async () => {
-    const email = 'revoke-one-session@example.com';
-    await request(app.getHttpServer())
-      .post('/api/auth/sign-up/email')
-      .send({ name: 'One revoker', email, password: 'password-123' })
-      .expect(200);
-    const login = await request(app.getHttpServer())
-      .post('/api/auth/sign-in/email')
-      .send({ email, password: 'password-123' })
-      .expect(200);
-    const cookie = login.headers['set-cookie']?.[0] ?? '';
+    const cookie = await signUpAndSignIn(app, 'revoke-one-session@example.com');
     const sessions = await request(app.getHttpServer())
       .get('/api/auth/list-sessions')
       .set('Cookie', cookie)
@@ -535,16 +529,10 @@ describe('Better Auth authentication (e2e)', () => {
   });
 
   it('When a signed-in user revokes all of their sessions, then the endpoint is reachable and succeeds', async () => {
-    const email = 'revoke-all-sessions@example.com';
-    await request(app.getHttpServer())
-      .post('/api/auth/sign-up/email')
-      .send({ name: 'All revoker', email, password: 'password-123' })
-      .expect(200);
-    const login = await request(app.getHttpServer())
-      .post('/api/auth/sign-in/email')
-      .send({ email, password: 'password-123' })
-      .expect(200);
-    const cookie = login.headers['set-cookie']?.[0] ?? '';
+    const cookie = await signUpAndSignIn(
+      app,
+      'revoke-all-sessions@example.com',
+    );
 
     await request(app.getHttpServer())
       .post('/api/auth/revoke-sessions')
@@ -553,16 +541,10 @@ describe('Better Auth authentication (e2e)', () => {
   });
 
   it('When a signed-in user calls the excluded account-deletion route, then it fails as an undocumented capability', async () => {
-    const email = 'delete-user-excluded@example.com';
-    await request(app.getHttpServer())
-      .post('/api/auth/sign-up/email')
-      .send({ name: 'Never deleted', email, password: 'password-123' })
-      .expect(200);
-    const login = await request(app.getHttpServer())
-      .post('/api/auth/sign-in/email')
-      .send({ email, password: 'password-123' })
-      .expect(200);
-    const cookie = login.headers['set-cookie']?.[0] ?? '';
+    const cookie = await signUpAndSignIn(
+      app,
+      'delete-user-excluded@example.com',
+    );
 
     await request(app.getHttpServer())
       .post('/api/auth/delete-user')

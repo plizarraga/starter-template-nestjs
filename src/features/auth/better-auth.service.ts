@@ -138,7 +138,7 @@ const EXCLUDED_AUTH_PATHS: ReadonlyArray<{ path: string; reason: string }> = [
   {
     path: '/verify-email',
     reason:
-      'Guarded by `emailVerification.sendVerificationEmail` — Better Auth throws BAD_REQUEST while it is unset, which this starter leaves unset.',
+      'Consumes the token `/send-verification-email` mints; that route throws BAD_REQUEST while `emailVerification.sendVerificationEmail` is unset, so no valid token is ever issued.',
   },
   {
     path: '/verify-password',
@@ -156,9 +156,7 @@ const EXCLUDED_AUTH_PATH_SET = new Set(
  * means {@link PUBLISHED_AUTH_PATHS} and {@link EXCLUDED_AUTH_PATHS}
  * completely describe what Better Auth currently generates.
  */
-export function findUnaccountedAuthPaths(
-  paths: Iterable<string>,
-): string[] {
+export function findUnaccountedAuthPaths(paths: Iterable<string>): string[] {
   return [...paths].filter(
     (path) =>
       !PUBLISHED_AUTH_PATHS.has(path) && !EXCLUDED_AUTH_PATH_SET.has(path),

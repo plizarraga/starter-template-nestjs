@@ -232,9 +232,7 @@ describe('mergeAuthOpenApiDocument', () => {
     expect(document.paths[`${AUTH_BASE_PATH}/revoke-session`]).toMatchObject({
       post: { security: [{ cookie: [] }], tags: ['auth'] },
     });
-    expect(
-      document.paths[`${AUTH_BASE_PATH}/revoke-sessions`],
-    ).toMatchObject({
+    expect(document.paths[`${AUTH_BASE_PATH}/revoke-sessions`]).toMatchObject({
       post: { security: [{ cookie: [] }], tags: ['auth'] },
     });
     expect(
