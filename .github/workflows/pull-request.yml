@@ -49,42 +49,12 @@ jobs:
       - name: Build application
         run: pnpm build
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: false
-          load: true
-          tags: starter-template-nestjs:ci
-
-      - name: Start PostgreSQL for the image
-        run: docker compose --project-name image-check up --detach --wait postgres
-
-      - name: Apply migrations through the built image
+      - name: Start the Compose stack from a clean state
         run: |
-          docker run --rm \
-            --network image-check_default \
-            --env DATABASE_URL=postgresql://backend_starter:backend_starter@postgres:5432/backend_starter \
-            --entrypoint ./node_modules/.bin/prisma \
-            starter-template-nestjs:ci migrate deploy
+          cp .env.example .env
+          docker compose --project-name compose-check up --detach --build
 
-      - name: Start the built image
-        run: |
-          docker run --detach \
-            --name image-check-app \
-            --network image-check_default \
-            --publish 3000:3000 \
-            --env DATABASE_URL=postgresql://backend_starter:backend_starter@postgres:5432/backend_starter \
-            --env BETTER_AUTH_SECRET=ci-only-better-auth-secret-not-used-anywhere-else \
-            --env CORS_ORIGINS=http://localhost:3000 \
-            --env PUBLIC_BASE_URL=https://localhost \
-            --env PORT=3000 \
-            starter-template-nestjs:ci
-
-      - name: Verify the built image serves readiness
+      - name: Verify the Compose stack serves readiness
         id: readiness
         run: |
           curl --fail --silent --show-error \
@@ -93,12 +63,11 @@ jobs:
             --retry-all-errors --retry-connrefused \
             http://localhost:3000/api/v1/health/ready
 
-      - name: Report why the built image never became ready
+      - name: Report why the Compose stack never became ready
         if: failure() && steps.readiness.outcome == 'failure'
-        run: docker logs image-check-app
+        run: docker compose --project-name compose-check logs
 
-      - name: Stop the image and its database
+      - name: Stop the Compose stack
         if: always()
         run: |
-          docker rm --force image-check-app
-          docker compose --project-name image-check down --volumes
+          docker compose --project-name compose-check down --volumes

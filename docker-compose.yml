@@ -1,6 +1,7 @@
 services:
   postgres:
     image: postgres:17-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: backend_starter
       POSTGRES_PASSWORD: backend_starter
@@ -11,9 +12,34 @@ services:
       timeout: 5s
       retries: 5
     ports:
-      - '5432:5432'
+      - '127.0.0.1:5432:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
+
+  migrate:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://backend_starter:backend_starter@postgres:5432/backend_starter
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ['./node_modules/.bin/prisma', 'migrate', 'deploy']
+    restart: 'no'
+
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://backend_starter:backend_starter@postgres:5432/backend_starter
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - '3000:3000'
 
 volumes:
   postgres-data:
