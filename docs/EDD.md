@@ -153,7 +153,15 @@ in development and test. Nest shutdown hooks stop
 accepting new work, drain in-flight requests, then call Prisma's module
 destruction hook to disconnect. Swagger documents starter-owned health and
 user routes under their versioned paths; Better Auth owns its native
-authentication route contract.
+authentication route contract. Better Auth's own OpenAPI output documents a
+bearer flow this starter does not implement, so `mergeAuthOpenApiDocument`
+(`src/features/auth/better-auth.service.ts`) republishes the documented
+authentication operations against the starter's `cookie` scheme — empty for
+sign-up and sign-in, which issue a session rather than requiring one — and
+copies Better Auth's schemas but never its security schemes. Swagger UI is
+configured to send credentials and persist authorization, because its Authorize
+dialog cannot set a session cookie: browsers forbid scripts from setting the
+`Cookie` header, so the real flow is to execute sign-in from the docs page.
 
 ## 6. Testing
 

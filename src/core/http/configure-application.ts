@@ -57,7 +57,11 @@ export async function configureApplication(
         .setTitle('Backend Starter API')
         .setDescription(
           'User administration API protected by Better Auth session cookies. ' +
-            'Native authentication routes are mounted at /api/auth.',
+            'Native authentication routes are mounted at /api/auth. ' +
+            'The Authorize dialog cannot set that cookie — browsers forbid ' +
+            'scripts from setting the Cookie header — so authenticate by ' +
+            'executing POST /api/auth/sign-in/email from this page and the ' +
+            'browser will send the session cookie on every later request.',
         )
         .setVersion('1.0')
         .addCookieAuth('better-auth.session_token')
@@ -69,6 +73,8 @@ export async function configureApplication(
 
     await httpExtension.contributeOpenApiDocument(document);
 
-    SwaggerModule.setup('docs', app, document);
+    SwaggerModule.setup('docs', app, document, {
+      swaggerOptions: { persistAuthorization: true, withCredentials: true },
+    });
   }
 }

@@ -1,6 +1,7 @@
 import { execFile as executeFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { OpenAPIObject } from '@nestjs/swagger';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../../src/generated/prisma/client';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -85,6 +86,17 @@ describe('Better Auth authentication (e2e)', () => {
           role: 'USER',
         }),
       );
+
+    const docs = await request(app.getHttpServer())
+      .get('/docs-json')
+      .expect(200);
+    const document = docs.body as OpenAPIObject;
+    expect(document.paths['/api/auth/sign-in/email']).toMatchObject({
+      post: { security: [] },
+    });
+    expect(document.paths[`${API_VERSIONED_PREFIX}/users/me`]).toMatchObject({
+      get: { security: [{ cookie: [] }] },
+    });
   });
 
   it('When a session user is deleted, then its cascaded session no longer authenticates protected routes', async () => {
