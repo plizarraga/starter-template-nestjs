@@ -74,6 +74,14 @@ in through its native JSON endpoints; successful authentication returns an
 HTTP-only session cookie. Send that cookie on requests to protected starter
 routes such as `/api/v1/users/me`.
 
+The session cookie targets a browser SPA, and that is a deliberate choice with
+a cost as well as a benefit. A native mobile client is not served by it and
+needs a bearer-token scheme instead; the default is meant to be changed when
+the client is not a browser. See
+[ADR 0002 — cookie sessions for a browser SPA](./docs/adr/0002-cookie-session-for-spa.md)
+for the reasoning, the CSRF tradeoff, and the single seam a bearer-token scheme
+plugs into.
+
 ```bash
 curl -i http://localhost:3000/api/auth/sign-up/email \
   --json '{"name":"Reader","email":"reader@example.com","password":"password-123"}'

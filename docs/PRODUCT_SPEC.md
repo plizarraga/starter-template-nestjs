@@ -79,6 +79,9 @@ Starter-owned errors use this shape:
 - A `cross-site` topology, or `NODE_ENV=production`, paired with a non-`https`
   `PUBLIC_BASE_URL` fails application startup instead of issuing a cookie the
   browser will silently reject.
+- Why the Authenticated Client is a browser SPA carrying a cookie rather than a
+  bearer token, what that costs, and what a native client would need instead:
+  [ADR 0002](./adr/0002-cookie-session-for-spa.md).
 
 ## 4. Authorization and Users
 
