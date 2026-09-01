@@ -19,7 +19,7 @@ pnpm only. Do not use npm or yarn.
 
 | Task | Command |
 | --- | --- |
-| local PostgreSQL | `docker compose up -d` |
+| local PostgreSQL | `docker compose up -d postgres` |
 | development | `pnpm start:dev` |
 | build | `pnpm build` |
 | typecheck | `pnpm typecheck` |

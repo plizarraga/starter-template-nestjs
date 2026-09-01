@@ -45,9 +45,27 @@ persistence, and shared platform capabilities out of the box.
 ## Quick Start
 
 ```bash
+cp .env.example .env && docker compose up --build
+```
+
+In a second terminal, verify readiness:
+
+```bash
+curl --retry 30 --retry-connrefused --retry-delay 2 \
+  http://localhost:3000/api/v1/health/ready
+```
+
+This starts PostgreSQL, applies committed migrations, and runs the API from its
+Docker image. PostgreSQL is published only on `127.0.0.1:5432`; the API is
+available at `http://localhost:3000`.
+
+To develop with Nest running outside Docker instead, keep PostgreSQL in Compose
+and start the application locally:
+
+```bash
 pnpm install
 cp .env.example .env
-docker compose up -d
+docker compose up -d postgres
 pnpm prisma:migrate
 pnpm start:dev
 ```
@@ -105,9 +123,18 @@ curl http://localhost:3000/api/v1/health/live
 curl http://localhost:3000/api/v1/health/ready
 ```
 
-Readiness reports PostgreSQL only. Apply migrations before deploying
-application replicas with `pnpm prisma:deploy`; the API process never runs
-migrations on startup.
+Readiness reports PostgreSQL only. Before deploying application replicas, apply
+committed migrations through the deployment image (on a Docker network that can
+reach PostgreSQL):
+
+```bash
+docker run --rm \
+  --env DATABASE_URL \
+  --entrypoint ./node_modules/.bin/prisma \
+  <deployment-image> migrate deploy
+```
+
+The API process never runs migrations on startup.
 
 ## Rate limiting
 
@@ -195,8 +222,7 @@ variables from its deployment platform; `.env` is not loaded when
 | `pnpm seed:user` | Create or promote a regular user. |
 
 Integration and E2E suites spin up isolated PostgreSQL Testcontainers; Docker
-must be available, but the local Compose service is not required for those
-suites.
+must be available, but the local Compose stack is not required for those suites.
 
 ## Architecture
 

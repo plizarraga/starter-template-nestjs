@@ -13,9 +13,9 @@ RUN pnpm install --frozen-lockfile
 
 FROM dependencies AS build
 COPY tsconfig.json tsconfig.build.json nest-cli.json ./
-COPY src ./src
 COPY prisma ./prisma
 RUN pnpm exec prisma generate
+COPY src ./src
 RUN pnpm build
 
 FROM dependencies AS production-dependencies
@@ -24,16 +24,19 @@ RUN pnpm prune --prod
 FROM ${NODE_IMAGE} AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
-RUN apk add --no-cache openssl \
-  && addgroup -S nestjs \
+RUN addgroup -S nestjs \
   && adduser -S nestjs -G nestjs
 
 COPY --from=production-dependencies --chown=nestjs:nestjs /app/node_modules ./node_modules
 COPY --from=build --chown=nestjs:nestjs /app/dist ./dist
+COPY --from=build --chown=nestjs:nestjs /app/prisma ./prisma
 COPY --chown=nestjs:nestjs package.json ./
-COPY --chown=nestjs:nestjs prisma/schema.prisma ./prisma/schema.prisma
+COPY --chown=nestjs:nestjs prisma.config.ts ./
 
 USER nestjs
 EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:3000/api/v1/health/ready').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"
 
 CMD ["node", "dist/src/main"]

@@ -192,14 +192,26 @@ and report a false pass. The critical seams are:
 
 ## 7. Operations
 
-Local development starts PostgreSQL with `docker compose up -d`, applies
-migrations with `pnpm prisma:migrate`, and starts Nest with `pnpm start:dev`.
-Production deployment applies committed migrations through `pnpm prisma:deploy`
-before starting application replicas. Run `pnpm seed:admin` explicitly with
-`SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` to create or promote the first
-administrator. Run `pnpm seed:user` with `SEED_USER_EMAIL` and
-`SEED_USER_PASSWORD` to create or promote a regular user the same way. The
-application never applies migrations at startup.
+`docker compose up --build -d` is the local whole-stack path: it starts
+PostgreSQL, runs a one-shot `migrate` service from the deployment image, then
+starts the `app` service only after the database is healthy and migrations
+succeed. The API process never applies migrations at startup. The stack reads
+developer configuration from `.env`; Compose overrides only `DATABASE_URL` to
+use its internal PostgreSQL hostname. PostgreSQL is published on loopback only.
+The local development path remains `docker compose up -d postgres`, followed by
+`pnpm prisma:migrate` and `pnpm start:dev` outside Docker.
+
+Production deployment applies committed migrations before starting application
+replicas by overriding the deployment image entrypoint with
+`./node_modules/.bin/prisma migrate deploy`. The image keeps the Prisma CLI,
+configuration, schema, and committed migrations for that distinct operation,
+while its default command starts only the application. Run `pnpm seed:admin`
+explicitly with `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` to create or
+promote the first administrator. Run `pnpm seed:user` with `SEED_USER_EMAIL`
+and `SEED_USER_PASSWORD` to create or promote a regular user the same way. The
+deployment image uses its embedded Node.js runtime to health-check
+`GET /api/v1/health/ready`; its runtime stage carries no OpenSSL installation
+because the Prisma 7 driver-adapter client requires none.
 
 `prisma/migrations/` deliberately holds a single `init` migration describing the
 current schema, rather than the incremental history that produced it. A template
