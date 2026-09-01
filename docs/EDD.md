@@ -199,7 +199,10 @@ before starting application replicas. Run `pnpm seed:admin` explicitly with
 `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` to create or promote the first
 administrator. Run `pnpm seed:user` with `SEED_USER_EMAIL` and
 `SEED_USER_PASSWORD` to create or promote a regular user the same way. The
-application never applies migrations at startup.
+application never applies migrations at startup. The deployment image uses its
+embedded Node.js runtime to health-check `GET /api/v1/health/ready`; its runtime
+stage carries neither Prisma's schema nor an OpenSSL installation because the
+Prisma 7 driver-adapter client requires neither.
 
 `prisma/migrations/` deliberately holds a single `init` migration describing the
 current schema, rather than the incremental history that produced it. A template
