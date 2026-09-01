@@ -105,9 +105,18 @@ curl http://localhost:3000/api/v1/health/live
 curl http://localhost:3000/api/v1/health/ready
 ```
 
-Readiness reports PostgreSQL only. Apply migrations before deploying
-application replicas with `pnpm prisma:deploy`; the API process never runs
-migrations on startup.
+Readiness reports PostgreSQL only. Before deploying application replicas, apply
+committed migrations through the deployment image (on a Docker network that can
+reach PostgreSQL):
+
+```bash
+docker run --rm \
+  --env DATABASE_URL \
+  --entrypoint ./node_modules/.bin/prisma \
+  <deployment-image> migrate deploy
+```
+
+The API process never runs migrations on startup.
 
 ## Rate limiting
 

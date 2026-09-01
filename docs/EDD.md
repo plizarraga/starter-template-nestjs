@@ -194,15 +194,18 @@ and report a false pass. The critical seams are:
 
 Local development starts PostgreSQL with `docker compose up -d`, applies
 migrations with `pnpm prisma:migrate`, and starts Nest with `pnpm start:dev`.
-Production deployment applies committed migrations through `pnpm prisma:deploy`
-before starting application replicas. Run `pnpm seed:admin` explicitly with
-`SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` to create or promote the first
-administrator. Run `pnpm seed:user` with `SEED_USER_EMAIL` and
-`SEED_USER_PASSWORD` to create or promote a regular user the same way. The
+Production deployment applies committed migrations before starting application
+replicas by overriding the deployment image entrypoint with
+`./node_modules/.bin/prisma migrate deploy`. The image keeps the Prisma CLI,
+configuration, schema, and committed migrations for that distinct operation,
+while its default command starts only the application. Run `pnpm seed:admin`
+explicitly with `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` to create or
+promote the first administrator. Run `pnpm seed:user` with `SEED_USER_EMAIL`
+and `SEED_USER_PASSWORD` to create or promote a regular user the same way. The
 application never applies migrations at startup. The deployment image uses its
 embedded Node.js runtime to health-check `GET /api/v1/health/ready`; its runtime
-stage carries neither Prisma's schema nor an OpenSSL installation because the
-Prisma 7 driver-adapter client requires neither.
+stage carries no OpenSSL installation because the Prisma 7 driver-adapter client
+requires none.
 
 `prisma/migrations/` deliberately holds a single `init` migration describing the
 current schema, rather than the incremental history that produced it. A template

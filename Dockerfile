@@ -29,7 +29,9 @@ RUN addgroup -S nestjs \
 
 COPY --from=production-dependencies --chown=nestjs:nestjs /app/node_modules ./node_modules
 COPY --from=build --chown=nestjs:nestjs /app/dist ./dist
+COPY --from=build --chown=nestjs:nestjs /app/prisma ./prisma
 COPY --chown=nestjs:nestjs package.json ./
+COPY --chown=nestjs:nestjs prisma.config.ts ./
 
 USER nestjs
 EXPOSE 3000

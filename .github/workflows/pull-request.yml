@@ -63,6 +63,14 @@ jobs:
       - name: Start PostgreSQL for the image
         run: docker compose --project-name image-check up --detach --wait postgres
 
+      - name: Apply migrations through the built image
+        run: |
+          docker run --rm \
+            --network image-check_default \
+            --env DATABASE_URL=postgresql://backend_starter:backend_starter@postgres:5432/backend_starter \
+            --entrypoint ./node_modules/.bin/prisma \
+            starter-template-nestjs:ci migrate deploy
+
       - name: Start the built image
         run: |
           docker run --detach \
