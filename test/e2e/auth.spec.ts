@@ -540,6 +540,77 @@ describe('Better Auth authentication (e2e)', () => {
       .expect(200);
   });
 
+  it('When a signed-in user changes their password, then the old password no longer signs in', async () => {
+    const email = 'password-changer@example.com';
+    const cookie = await signUpAndSignIn(app, email);
+
+    await request(app.getHttpServer())
+      .post('/api/auth/change-password')
+      .set('Cookie', cookie)
+      .send({ currentPassword: 'password-123', newPassword: 'password-456' })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post('/api/auth/sign-in/email')
+      .send({ email, password: 'password-123' })
+      .expect(401);
+    await request(app.getHttpServer())
+      .post('/api/auth/sign-in/email')
+      .send({ email, password: 'password-456' })
+      .expect(200);
+  });
+
+  it('When a signed-in user verifies their password, then correct and incorrect credentials are distinguished', async () => {
+    const cookie = await signUpAndSignIn(app, 'password-verifier@example.com');
+
+    await request(app.getHttpServer())
+      .post('/api/auth/verify-password')
+      .set('Cookie', cookie)
+      .send({ password: 'password-123' })
+      .expect(200);
+    await request(app.getHttpServer())
+      .post('/api/auth/verify-password')
+      .set('Cookie', cookie)
+      .send({ password: 'wrong-password' })
+      .expect(400);
+  });
+
+  it('When a signed-in user updates their profile, then the role remains starter-controlled', async () => {
+    const email = 'profile-updater@example.com';
+    const cookie = await signUpAndSignIn(app, email);
+
+    await request(app.getHttpServer())
+      .post('/api/auth/update-user')
+      .set('Cookie', cookie)
+      .send({ name: 'Updated user' })
+      .expect(200);
+
+    await request(app.getHttpServer())
+      .post('/api/auth/update-user')
+      .set('Cookie', cookie)
+      .send({ role: 'ADMIN' })
+      .expect(400);
+
+    await request(app.getHttpServer())
+      .get('/api/auth/get-session')
+      .set('Cookie', cookie)
+      .expect(200)
+      .expect(({ body }) =>
+        expect(body).toMatchObject({
+          user: { email, name: 'Updated user', role: 'USER' },
+        }),
+      );
+  });
+
+  it('When a signed-in user lists their accounts, then the endpoint is reachable', async () => {
+    const cookie = await signUpAndSignIn(app, 'account-lister@example.com');
+
+    await request(app.getHttpServer())
+      .get('/api/auth/list-accounts')
+      .set('Cookie', cookie)
+      .expect(200);
+  });
+
   it('When a signed-in user calls the excluded account-deletion route, then it fails as an undocumented capability', async () => {
     const cookie = await signUpAndSignIn(
       app,

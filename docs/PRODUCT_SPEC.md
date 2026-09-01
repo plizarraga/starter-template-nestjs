@@ -18,6 +18,10 @@ Better Auth owns the native authentication API mounted at `/api/auth`.
 | `POST` | `/api/auth/sign-in/email` | Create a browser session. |
 | `POST` | `/api/auth/sign-out` | End the current session. |
 | `GET` | `/api/auth/get-session` | Return the active session when present. |
+| `POST` | `/api/auth/change-password` | Change the active user's password. |
+| `POST` | `/api/auth/verify-password` | Verify the active user's password. |
+| `POST` | `/api/auth/update-user` | Update the active user's profile. |
+| `GET` | `/api/auth/list-accounts` | List the active user's identity-provider accounts. |
 | `GET` | `/api/auth/list-sessions` | List the caller's active sessions. |
 | `POST` | `/api/auth/revoke-session` | Revoke one session by its token. |
 | `POST` | `/api/auth/revoke-sessions` | Revoke every session, including the caller's own. |
@@ -25,7 +29,10 @@ Better Auth owns the native authentication API mounted at `/api/auth`.
 
 Authentication routes use Better Auth request, success, cookie, and error
 shapes. The starter does not adapt those responses. Sign-up requires `name`,
-`email`, and `password`; sign-in requires `email` and `password`.
+`email`, and `password`; sign-in requires `email` and `password`. `POST
+/api/auth/update-user` can update profile fields, but cannot set or change
+`role`: the starter owns `USER` and `ADMIN` role assignment, and Better Auth
+rejects a role submitted through this route.
 
 Better Auth generates other routes this starter does not enable and therefore
 does not publish — social sign-in, email change, account deletion, password

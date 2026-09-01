@@ -20,10 +20,14 @@ const PUBLISHED_AUTH_PATHS = new Set([
   '/sign-in/email',
   '/sign-out',
   '/get-session',
+  '/change-password',
   '/list-sessions',
+  '/list-accounts',
   '/revoke-session',
   '/revoke-sessions',
   '/revoke-other-sessions',
+  '/update-user',
+  '/verify-password',
 ]);
 
 /**
@@ -51,11 +55,6 @@ const EXCLUDED_AUTH_PATHS: ReadonlyArray<{ path: string; reason: string }> = [
       'Guarded by `user.changeEmail.enabled` — Better Auth throws BAD_REQUEST while it is unset, which this starter leaves unset.',
   },
   {
-    path: '/change-password',
-    reason:
-      'Core route, already functional with no gating config; withheld because self-service profile management is outside this ticket’s session-management scope.',
-  },
-  {
     path: '/delete-user',
     reason:
       'Guarded by `user.deleteUser.enabled` — Better Auth throws NOT_FOUND while it is unset, which this starter leaves unset.',
@@ -79,11 +78,6 @@ const EXCLUDED_AUTH_PATHS: ReadonlyArray<{ path: string; reason: string }> = [
     path: '/link-social',
     reason:
       'Links a social account to the signed-in user; requires `socialProviders` to configure a provider.',
-  },
-  {
-    path: '/list-accounts',
-    reason:
-      "Lists the user's linked OAuth accounts; always empty until `socialProviders` configures a provider.",
   },
   {
     path: '/ok',
@@ -131,19 +125,9 @@ const EXCLUDED_AUTH_PATHS: ReadonlyArray<{ path: string; reason: string }> = [
       'Core route, already functional with no gating config; withheld because updating session metadata is outside this ticket’s session-management scope, which covers listing and revoking.',
   },
   {
-    path: '/update-user',
-    reason:
-      'Core route, already functional with no gating config; withheld because self-service profile management is outside this ticket’s session-management scope.',
-  },
-  {
     path: '/verify-email',
     reason:
       'Consumes the token `/send-verification-email` mints; that route throws BAD_REQUEST while `emailVerification.sendVerificationEmail` is unset, so no valid token is ever issued.',
-  },
-  {
-    path: '/verify-password',
-    reason:
-      'Core route, already functional with no gating config; withheld because self-service credential checks are outside this ticket’s session-management scope.',
   },
 ];
 
@@ -200,6 +184,12 @@ function normalizeAuthPathItem(
     }
     normalized[key] = {
       ...(operation as Record<string, unknown>),
+      ...(path === '/update-user'
+        ? {
+            description:
+              'The starter owns user roles; this route cannot set or change a role.',
+          }
+        : {}),
       security,
       tags: ['auth'],
     };

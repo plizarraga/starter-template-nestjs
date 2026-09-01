@@ -162,6 +162,11 @@ copies Better Auth's schemas but never its security schemes. Swagger UI is
 configured to send credentials and persist authorization, because its Authorize
 dialog cannot set a session cookie: browsers forbid scripts from setting the
 `Cookie` header, so the real flow is to execute sign-in from the docs page.
+The published and excluded route registries account for every Better Auth
+OpenAPI path; the E2E drift guard fails when a generated route belongs to
+neither. The `update-user` operation carries a starter-specific description
+that roles remain starter-owned; Better Auth rejects `role` input because the
+additional field configures `input: false`.
 
 ## 6. Testing
 
