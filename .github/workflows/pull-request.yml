@@ -81,7 +81,8 @@ jobs:
         run: |
           curl --fail --silent --show-error \
             --max-time 10 \
-            --retry 30 --retry-delay 2 --retry-all-errors --retry-connrefused \
+            --retry 30 --retry-delay 2 --retry-max-time 90 \
+            --retry-all-errors --retry-connrefused \
             http://localhost:3000/api/v1/health/ready
 
       - name: Report why the built image never became ready
