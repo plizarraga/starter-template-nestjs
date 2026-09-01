@@ -83,12 +83,13 @@ CSRF control for `cross-site`: it delegates an exact `Origin` check to the
 platform `OriginValidator` for `POST`, `PUT`, `PATCH`, and `DELETE` requests to
 any starter-owned route. It remains inert for safe methods and all `same-site`
 requests, where `SameSite=Lax` remains the browser-level protection. Better
-Auth owns the corresponding check for its native routes. Session cookie caching
+Auth owns the corresponding check for its native routes. Why the session is
+carried by a cookie at all rather than a bearer token, what that costs, and
+what a native client would require instead is recorded in
+[ADR 0002](./adr/0002-cookie-session-for-spa.md). Session cookie caching
 (`session.cookieCache`) stays disabled: enabling it would trade the guarantee
 that a role change takes effect on the next protected request for a staleness
-window. Why the session is carried by a cookie at all rather than a bearer
-token, what that costs, and what a native client would require instead is
-recorded in [ADR 0002](./adr/0002-cookie-session-for-spa.md).
+window.
 `PUBLIC_BASE_URL` feeds Better Auth's `baseURL` and must be `https` when
 `DEPLOYMENT_TOPOLOGY=cross-site` or `NODE_ENV=production`; a configuration
 browsers would reject fails at boot with a message naming the offending

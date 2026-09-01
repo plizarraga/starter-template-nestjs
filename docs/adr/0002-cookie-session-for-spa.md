@@ -28,12 +28,14 @@ no second authentication path in this starter today.
 That change happens at one seam — the `plugins` array in `createAuthInstance`
 (`src/features/auth/better-auth.service.ts`), which today reads
 `plugins: [openAPI()]`. Adding `bearer()` from `better-auth/plugins`, wired the
-same way `openAPI()` is, is the whole integration point. The plugin runs as a
-`before` hook that rewrites an `Authorization: bearer <token>` header into the
-session cookie on the request before the session is resolved, so
-`BetterAuthService.getSession` and `SessionGuard` keep working unchanged, and
-Better Auth returns the token to the client in a `set-auth-token` response
-header on its native routes. Nothing in the request pipeline moves: the
+same way `openAPI()` is, is the whole integration point. Per the installed
+`better-auth` package's own plugin source (`better-auth/plugins`, not code this
+starter owns), the plugin runs as a `before` hook that rewrites an
+`Authorization: bearer <token>` header into the session cookie on the request
+before the session is resolved, so `BetterAuthService.getSession` and
+`SessionGuard` keep working unchanged, and Better Auth returns the token to the
+client in a `set-auth-token` response header on its native routes. Nothing in
+the request pipeline moves: the
 `HttpExtension` contract (`src/core/http/http-extension.ts`) and
 `configureApplication` mount the same handler either way. The default is meant
 to be changed when the client is not a browser — not worked around.
