@@ -136,10 +136,13 @@ runtime service; production requires secure cookies and disables Swagger.
 
 ## Database migrations
 
+In this repository, which is maintained as the starter template,
 `prisma/migrations/` holds exactly one migration, `init`, and it must stay that
-way. This is a template: every consumer starts from an empty database, so a
-trail of incremental migrations would only replay this repository's own history
-for someone who was never at any of those points.
+way. A template consumer starts from an empty database, so a trail of
+incremental migrations would only replay this repository's own history for
+someone who was never at any of those points. This rule ends when a project is
+created from the template: its application code uses ordinary incremental
+migrations for future schema changes.
 
 `prisma migrate dev` appends a new migration directory. After changing
 `prisma/schema.prisma`, fold that change back into `init` instead of shipping

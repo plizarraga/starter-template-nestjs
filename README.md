@@ -136,6 +136,19 @@ docker run --rm \
 
 The API process never runs migrations on startup.
 
+## After Creating a Project
+
+The committed `init` migration is the complete starting schema for this
+template. After creating an application from it, create ordinary incremental
+migrations for that application's schema changes:
+
+```bash
+pnpm prisma:migrate --name add_projects
+```
+
+The single-`init` convention applies only while maintaining this starter
+repository; do not fold migrations back into `init` in a generated application.
+
 ## Rate limiting
 
 Two independent layers, because two independent routers serve this API.
