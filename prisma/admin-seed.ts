@@ -9,14 +9,13 @@ type AdminSeedClient = {
       create: {
         accountId: string;
         id: string;
-        issuer: 'local:credential';
         password: string;
         providerId: 'credential';
         userId: string;
       };
       update: { password: string };
       where: {
-        issuer_accountId: { accountId: string; issuer: string };
+        providerId_accountId: { accountId: string; providerId: string };
       };
     }): Promise<unknown>;
   };
@@ -60,16 +59,15 @@ export async function seedAdmin(
     create: {
       accountId: user.id,
       id: randomUUID(),
-      issuer: 'local:credential',
       password: passwordDigest,
       providerId: 'credential',
       userId: user.id,
     },
     update: { password: passwordDigest },
     where: {
-      issuer_accountId: {
+      providerId_accountId: {
         accountId: user.id,
-        issuer: 'local:credential',
+        providerId: 'credential',
       },
     },
   });

@@ -37,7 +37,6 @@ CREATE TABLE "account" (
     "id" TEXT NOT NULL,
     "accountId" TEXT NOT NULL,
     "providerId" TEXT NOT NULL,
-    "issuer" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "accessToken" TEXT,
     "refreshToken" TEXT,
@@ -99,7 +98,7 @@ CREATE INDEX "session_expiresAt_idx" ON "session"("expiresAt");
 CREATE INDEX "account_userId_idx" ON "account"("userId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "account_issuer_accountId_key" ON "account"("issuer", "accountId");
+CREATE UNIQUE INDEX "account_providerId_accountId_key" ON "account"("providerId", "accountId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "rate_limit_key_key" ON "rate_limit"("key");

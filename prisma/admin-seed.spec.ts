@@ -18,15 +18,14 @@ describe('seedAdmin', () => {
       Parameters<typeof seedAdmin>[0]['account']['upsert']
     >(({ create, update, where }) => {
       expect(create.accountId).toBe('admin-id');
-      expect(create.issuer).toBe('local:credential');
       expect(create.password).toBe('encoded-password');
       expect(create.providerId).toBe('credential');
       expect(create.userId).toBe('admin-id');
       expect(update).toEqual({ password: 'encoded-password' });
       expect(where).toEqual({
-        issuer_accountId: {
+        providerId_accountId: {
           accountId: 'admin-id',
-          issuer: 'local:credential',
+          providerId: 'credential',
         },
       });
       return Promise.resolve();
