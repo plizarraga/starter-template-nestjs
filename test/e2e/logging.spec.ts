@@ -1,7 +1,6 @@
 import { Writable } from 'node:stream';
 import { Test, TestingModule } from '@nestjs/testing';
-import { LoggerModule } from 'nestjs-pino';
-import type { Logger } from 'nestjs-pino';
+import { Logger, LoggerModule } from 'nestjs-pino';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { defaultEnvironment } from '../support/default-environment';
 
@@ -15,8 +14,6 @@ describe('platform logging (e2e)', () => {
     process.env = { ...originalEnvironment, ...defaultEnvironment };
     const { pinoRedaction } =
       (await import('../../src/core/logging/platform-logger.module.js')) as typeof import('../../src/core/logging/platform-logger.module.js');
-    const { Logger: PinoNestLogger } =
-      (await import('nestjs-pino')) as typeof import('nestjs-pino');
     const captureStream = new Writable({
       write(chunk: Buffer, _encoding, callback) {
         chunks.push(chunk.toString());
@@ -37,7 +34,7 @@ describe('platform logging (e2e)', () => {
     }).compile();
     const app = moduleRef.createNestApplication();
     await app.init();
-    logger = app.get(PinoNestLogger);
+    logger = app.get(Logger);
   }, 30_000);
 
   afterAll(async () => {
