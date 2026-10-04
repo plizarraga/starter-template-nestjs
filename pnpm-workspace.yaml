@@ -1,6 +1,10 @@
 overrides:
   deepmerge-ts: ^8.0.0
   mysql2: '>=3.23.1'
+  '@grpc/grpc-js': '>=1.14.5'
+  'brace-expansion@<2': '>=1.1.21'
+  'brace-expansion@>=2 <3': '>=2.1.7'
+  'brace-expansion@>=4 <6': '>=5.0.12'
 
 allowBuilds:
   '@prisma/client': true
